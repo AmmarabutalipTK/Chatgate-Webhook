@@ -1,16 +1,7 @@
 import { WebhookService } from "../services/webhook.service";
 
 export class EventBus {
-  async dispatch(
-    event: string,
-    data: unknown
-  ) {
-    const payload = {
-      event,
-      occurred_at: new Date().toISOString(),
-      data,
-    };
-
+  async dispatch(payload: Record<string, any>) {
     await WebhookService.send(payload);
   }
 }

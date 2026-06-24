@@ -21,129 +21,79 @@ export async function eventRoutes(
     });
   });
 
-  fastify.post(
-    "/events/client-created",
-    async (request) => {
-      await eventBus.dispatch(
-        EventType.CLIENT_CREATED,
-        request.body
-      );
+  const handleEvent =
+    (event: string) =>
+    async (request: any) => {
+      const query = request.query as {
+        phone_no?: string;
+        Channel?: string;
+      };
+
+      await eventBus.dispatch({
+        event,
+        phone_no: query.phone_no,
+        Channel:
+          query.Channel ?? "Whatsapp",
+        data: request.body,
+      });
 
       return {
         success: true,
       };
-    }
+    };
+
+  fastify.post(
+    "/events/client-created",
+    handleEvent(EventType.CLIENT_CREATED)
   );
 
   fastify.post(
     "/events/client-updated",
-    async (request) => {
-      await eventBus.dispatch(
-        EventType.CLIENT_UPDATED,
-        request.body
-      );
-
-      return {
-        success: true,
-      };
-    }
+    handleEvent(EventType.CLIENT_UPDATED)
   );
 
   fastify.post(
     "/events/product-created",
-    async (request) => {
-      await eventBus.dispatch(
-        EventType.PRODUCT_CREATED,
-        request.body
-      );
-
-      return {
-        success: true,
-      };
-    }
+    handleEvent(EventType.PRODUCT_CREATED)
   );
 
   fastify.post(
     "/events/product-updated",
-    async (request) => {
-      await eventBus.dispatch(
-        EventType.PRODUCT_UPDATED,
-        request.body
-      );
-
-      return {
-        success: true,
-      };
-    }
+    handleEvent(EventType.PRODUCT_UPDATED)
   );
 
   fastify.post(
     "/events/salesorder-created",
-    async (request) => {
-      await eventBus.dispatch(
-        EventType.SALESORDER_CREATED,
-        request.body
-      );
-
-      return {
-        success: true,
-      };
-    }
+    handleEvent(
+      EventType.SALESORDER_CREATED
+    )
   );
 
   fastify.post(
     "/events/salesorder-updated",
-    async (request) => {
-      await eventBus.dispatch(
-        EventType.SALESORDER_UPDATED,
-        request.body
-      );
-
-      return {
-        success: true,
-      };
-    }
+    handleEvent(
+      EventType.SALESORDER_UPDATED
+    )
   );
 
   fastify.post(
     "/events/invoice-created",
-    async (request) => {
-      await eventBus.dispatch(
-        EventType.INVOICE_CREATED,
-        request.body
-      );
-
-      return {
-        success: true,
-      };
-    }
+    handleEvent(
+      EventType.INVOICE_CREATED
+    )
   );
 
   fastify.post(
     "/events/inventory-updated",
-    async (request) => {
-      await eventBus.dispatch(
-        EventType.INVENTORY_UPDATED,
-        request.body
-      );
-
-      return {
-        success: true,
-      };
-    }
+    handleEvent(
+      EventType.INVENTORY_UPDATED
+    )
   );
 
   fastify.post(
     "/events/workorder-created",
-    async (request) => {
-      await eventBus.dispatch(
-        EventType.WORKORDER_CREATED,
-        request.body
-      );
-
-      return {
-        success: true,
-      };
-    }
+    handleEvent(
+      EventType.WORKORDER_CREATED
+    )
   );
 }
