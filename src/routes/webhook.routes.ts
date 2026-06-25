@@ -31,9 +31,7 @@ export async function eventRoutes(
 
       await eventBus.dispatch({
         event,
-        phone_no: query.phone_no,
-        Channel:
-          query.Channel ?? "Whatsapp",
+        Channel: "Whatsapp",
         data: request.body,
       });
 

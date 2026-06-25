@@ -3,20 +3,12 @@ import { prisma } from "../prisma";
 export class WebhookService {
   static async send(payload: Record<string, any>) {
     const event = payload.event;
-    const channel =
-      payload.Channel ?? "Whatsapp";
-    const phoneNo = payload.phone_no;
+    const channel ="Whatsapp";
 
-    if (!phoneNo) {
-      throw new Error(
-        `Missing required field: phone_no for event ${event}`
-      );
-    }
 
     const params = new URLSearchParams({
       event: String(event),
       Channel: String(channel),
-      "user.phone_no": String(phoneNo),
     });
 
     Object.entries(payload.data ?? {}).forEach(
