@@ -6,6 +6,20 @@ import { prisma } from "../prisma";
 export async function eventRoutes(
   fastify: FastifyInstance
 ) {
+  // Log every incoming request
+  fastify.addHook("onRequest", async (request) => {
+    console.log("========================================");
+    console.log("Incoming Request");
+    console.log({
+      time: new Date().toISOString(),
+      method: request.method,
+      url: request.url,
+      ip: request.ip,
+      headers: request.headers,
+    });
+    console.log("========================================");
+  });
+
   fastify.get("/health", async () => {
     return {
       success: true,
@@ -23,21 +37,38 @@ export async function eventRoutes(
 
   const handleEvent =
     (event: string) =>
-    async (request: any) => {
-      const query = request.query as {
-        phone_no?: string;
-        Channel?: string;
-      };
-
-      await eventBus.dispatch({
+    async (request: any, reply: any) => {
+      console.log("=========== WEBHOOK RECEIVED ===========");
+      console.log({
+        time: new Date().toISOString(),
         event,
-        Channel: "Whatsapp",
-        data: request.body,
+        invoiceId: request.body?._id,
+        clientId: request.body?.client_id,
       });
 
-      return {
-        success: true,
-      };
+      console.log("Body:");
+      console.log(JSON.stringify(request.body, null, 2));
+
+      try {
+        await eventBus.dispatch({
+          event,
+          Channel: "Whatsapp",
+          data: request.body,
+        });
+
+        console.log("Webhook processed successfully");
+
+        return reply.code(200).send({
+          success: true,
+        });
+      } catch (error) {
+        console.error("Webhook processing failed");
+        console.error(error);
+
+        return reply.code(500).send({
+          success: false,
+        });
+      }
     };
 
   fastify.post(
@@ -62,36 +93,26 @@ export async function eventRoutes(
 
   fastify.post(
     "/events/salesorder-created",
-    handleEvent(
-      EventType.SALESORDER_CREATED
-    )
+    handleEvent(EventType.SALESORDER_CREATED)
   );
 
   fastify.post(
     "/events/salesorder-updated",
-    handleEvent(
-      EventType.SALESORDER_UPDATED
-    )
+    handleEvent(EventType.SALESORDER_UPDATED)
   );
 
   fastify.post(
     "/events/invoice-created",
-    handleEvent(
-      EventType.INVOICE_CREATED
-    )
+    handleEvent(EventType.INVOICE_CREATED)
   );
 
   fastify.post(
     "/events/inventory-updated",
-    handleEvent(
-      EventType.INVENTORY_UPDATED
-    )
+    handleEvent(EventType.INVENTORY_UPDATED)
   );
 
   fastify.post(
     "/events/workorder-created",
-    handleEvent(
-      EventType.WORKORDER_CREATED
-    )
+    handleEvent(EventType.WORKORDER_CREATED)
   );
 }
