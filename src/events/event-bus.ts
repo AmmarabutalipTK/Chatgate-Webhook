@@ -45,7 +45,7 @@ async dispatch(payload: Record<string, any>) {
 
         const msg = `مرحبا ${clineName} طلبك جاهز` 
         return WebhookService.send({
-          ...payload,
+          // ...payload,
           user: {
             phone_no: clientPhone,
           },
