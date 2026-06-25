@@ -34,7 +34,7 @@ async dispatch(payload: Record<string, any>) {
      const clientId = payload?.data?.client_id;
      const data = payload?.data;
 
-      if (true) {
+      if (clientId) {
         const client = await EventBus.getClient(clientId);
      const clientPhone = client?.phone
      const clineName = client?.name
@@ -45,6 +45,7 @@ const invoiceId = data?.creator?._id?.slice(-6);
         const msg = `مرحبا ${clineName} طلبك جاهز` 
         return WebhookService.send({
           // ...payload,
+          event:payload.event,
           user: {
             phone_no: clientPhone,
           },
