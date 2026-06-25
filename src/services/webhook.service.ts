@@ -16,7 +16,7 @@ const phone_no = payload?.user?.phone_no?.replace(/^\+/, "");
      "user.phone_no": String(phone_no),
     channel: "Whatsapp",
     name:String(name),
-    total:String(total),
+    total:String(total.toFixed(3)),
     invoiceId:String(invoiceId)
   });
 
