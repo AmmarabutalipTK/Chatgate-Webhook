@@ -32,12 +32,15 @@ private static async getClient(clientId: string) {
 
 async dispatch(payload: Record<string, any>) {
      const clientId = payload?.data?.client_id;
+     const data = payload?.data;
 
       if (true) {
         const client = await EventBus.getClient(clientId);
      const clientPhone = client?.phone
      const clineName = client?.name
 
+     const total = data?.total
+     const invoiceId = data?.creator?._id
      console.log({client})
 
         const msg = `مرحبا ${clineName} طلبك جاهز` 
@@ -49,6 +52,8 @@ async dispatch(payload: Record<string, any>) {
           phone_no:clientPhone,
           msg,
           client_name: clineName,
+          total,
+          invoiceId
         });
       }
   // switch (payload.event) {
