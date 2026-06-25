@@ -8,17 +8,14 @@ datasource db {
 }
 
 model Delivery {
-  id           String   @id @default(uuid())
-
+  id           String   @id @default(cuid())
   event        String
-
+  invoiceId    String?  // 👈 TEMPORARY nullable
   requestBody  String
-
-  statusCode   Int?
-
+  responseBody String
+  statusCode   Int
   success      Boolean
-
-  responseBody String?
-
   createdAt    DateTime @default(now())
+
+  @@index([invoiceId])
 }

@@ -14,14 +14,12 @@ export class WebhookService {
       .replace(/\s+/g, "");
 
     // ===============================
-    // 1. IDENTITY / IDEMPOTENCY GUARD
+    // 1. IDENTITY / IDEMPOTENCY GUARD (FIXED)
     // ===============================
     const existing = await prisma.delivery.findFirst({
       where: {
         event,
-        requestBody: {
-          contains: invoiceId,
-        },
+        invoiceId, 
       },
     });
 
@@ -66,11 +64,12 @@ export class WebhookService {
       });
 
       // ===============================
-      // 4. SUCCESS LOG
+      // 4. SUCCESS LOG (FIXED)
       // ===============================
       await prisma.delivery.create({
         data: {
           event,
+          invoiceId, // 🔥 FIX: added for consistency + future dedupe
           requestBody: JSON.stringify(payload),
           statusCode: response.status,
           success: true,
@@ -88,11 +87,12 @@ export class WebhookService {
           : JSON.stringify(error.response?.data ?? { message: error.message });
 
       // ===============================
-      // 5. ERROR LOG
+      // 5. ERROR LOG (FIXED)
       // ===============================
       await prisma.delivery.create({
         data: {
           event,
+          invoiceId, // 🔥 FIX: consistent tracking
           requestBody: JSON.stringify(payload),
           statusCode,
           success: false,

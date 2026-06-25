@@ -55,9 +55,11 @@ export class EventBus {
       const clientName = client?.name;
       const total = data?.total;
 
+      const invoiceId=data?._id
       const msg = `مرحبا ${clientName} طلبك جاهز`;
 
       return WebhookService.send({
+
         event: payload.event,
         user: {
           phone_no: clientPhone,
@@ -66,8 +68,7 @@ export class EventBus {
         msg,
         client_name: clientName,
         total,
-        invoiceId, // <-- unchanged
-        repzoInvoiceId, // optional, only if you want to log/store it
+        invoiceId, 
       });
     }
 
