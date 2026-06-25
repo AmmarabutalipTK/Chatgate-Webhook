@@ -41,7 +41,6 @@ async dispatch(payload: Record<string, any>) {
 
      const total = data?.total
      const invoiceId = data?.creator?._id
-     console.log({client})
 
         const msg = `مرحبا ${clineName} طلبك جاهز` 
         return WebhookService.send({
