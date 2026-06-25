@@ -1,12 +1,10 @@
 import { WebhookService } from "../services/webhook.service";
-import { EventType } from "./event-types";
+import { prisma } from "../prisma";
 import axios from "axios";
 
 export class EventBus {
-
-private static async getClient(clientId: string) {
-  try {
-    const data = await axios.get(
+  private static async getClient(clientId: string) {
+    const { data } = await axios.get(
       `https://sv.api.repzo.me/client/${clientId}`,
       {
         headers: {
@@ -18,69 +16,63 @@ private static async getClient(clientId: string) {
       }
     );
 
-    console.dir(data, { depth: null });
-
-    return data?.data;
-  } catch (error: any) {
-    console.error("Status:", error.response?.status);
-    console.error("Headers:", error.response?.headers);
-    console.error("Body:", error.response?.data);
-
-    throw error;
+    return data;
   }
-}
 
-async dispatch(payload: Record<string, any>) {
-     const clientId = payload?.data?.client_id;
-     const data = payload?.data;
+  async dispatch(payload: Record<string, any>) {
+    const clientId = payload?.data?.client_id;
+    const data = payload?.data;
 
-      if (clientId) {
-        const client = await EventBus.getClient(clientId);
-     const clientPhone = client?.phone
-     const clineName = client?.name
+    // Real invoice id for deduplication
+    const repzoInvoiceId = data?._id;
 
-     const total = data?.total
-const invoiceId = data?.creator?._id?.slice(-6);
+    // Keep your existing invoice id
+    const invoiceId = data?.creator?._id?.slice(-6);
 
-        const msg = `مرحبا ${clineName} طلبك جاهز` 
-        return WebhookService.send({
-          // ...payload,
-          event:payload.event,
-          user: {
-            phone_no: clientPhone,
+    if (repzoInvoiceId) {
+      const alreadySent = await prisma.delivery.findFirst({
+        where: {
+          event: payload.event,
+          success: true,
+          requestBody: {
+            contains: repzoInvoiceId,
           },
-          phone_no:clientPhone,
-          msg,
-          client_name: clineName,
-          total,
-          invoiceId
-        });
+        },
+      });
+
+      if (alreadySent) {
+        console.log(
+          `Skipping duplicate invoice ${repzoInvoiceId}`
+        );
+        return;
       }
-  // switch (payload.event) {
-  //   case EventType.INVOICE_CREATED: {
-  //     const clientId = payload?.data?.client_id;
+    }
 
-  //     if (clientId) {
-  //       const client = await EventBus.getClient(clientId);
+    if (clientId) {
+      const client = await EventBus.getClient(clientId);
 
-  //       return WebhookService.send({
-  //         ...payload,
-  //         user: {
-  //           phone_no: client?.phone,
-  //         },
-  //         client_name: client?.name,
-  //       });
-  //     }
+      const clientPhone = client?.phone;
+      const clientName = client?.name;
+      const total = data?.total;
 
-  //     // break;
-  //   }
+      const msg = `مرحبا ${clientName} طلبك جاهز`;
 
-  //   default:
-  //     break;
-  // }
+      return WebhookService.send({
+        event: payload.event,
+        user: {
+          phone_no: clientPhone,
+        },
+        phone_no: clientPhone,
+        msg,
+        client_name: clientName,
+        total,
+        invoiceId, // <-- unchanged
+        repzoInvoiceId, // optional, only if you want to log/store it
+      });
+    }
 
-  return WebhookService.send(payload);
-}
+    return WebhookService.send(payload);
+  }
 }
 
 export const eventBus = new EventBus();
