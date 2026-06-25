@@ -40,7 +40,7 @@ async dispatch(payload: Record<string, any>) {
      const clineName = client?.name
 
      const total = data?.total
-     const invoiceId = data?.creator?._id
+const invoiceId = data?.creator?._id?.slice(-6);
 
         const msg = `مرحبا ${clineName} طلبك جاهز` 
         return WebhookService.send({
