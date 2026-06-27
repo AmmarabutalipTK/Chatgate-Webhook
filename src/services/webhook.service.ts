@@ -60,7 +60,6 @@ export class WebhookService {
           Authorization: `Basic ${process.env.CHATGATE_AUTH}`,
           "Content-Type": "application/json",
         },
-        timeout: 15000,
       });
 
       // ===============================
