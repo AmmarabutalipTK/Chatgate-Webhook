@@ -53,7 +53,7 @@ export class EventBus {
 
       const clientPhone = client?.phone;
       const clientName = client?.name;
-      const total = data?.total;
+      const total = Number(data?.total).toFixed(2);
 
       const invoiceId=data?._id
       const msg = `مرحبا ${clientName} طلبك جاهز`;
