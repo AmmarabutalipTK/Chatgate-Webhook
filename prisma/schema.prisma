@@ -9,13 +9,36 @@ datasource db {
 
 model Delivery {
   id           String   @id @default(cuid())
+
   event        String
-  invoiceId    String?  // 👈 TEMPORARY nullable
+  invoiceId    String?
+  phoneNo      String?
+
   requestBody  String
   responseBody String
+
   statusCode   Int
   success      Boolean
+
   createdAt    DateTime @default(now())
 
+  logs DeliveryLog[]
+
   @@index([invoiceId])
+  @@index([phoneNo, createdAt])
+}
+
+model DeliveryLog {
+  id          String   @id @default(cuid())
+
+  deliveryId  String
+
+  level       String
+  message     String
+
+  createdAt   DateTime @default(now())
+
+  delivery Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId])
 }
