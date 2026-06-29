@@ -30,7 +30,7 @@ export class InvoiceTemplate {
     { text: "العبدالله ", bold: true },
     { text: "خيارات ", bold: true },
     { text: ` `, bold: true },
-    { text: " شركة", bold: true },
+    { text: "شركة", bold: true },
   ],
   alignment: "right",
   fontSize: 20,
