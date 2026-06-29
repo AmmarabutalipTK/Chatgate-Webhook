@@ -24,7 +24,7 @@ export class EventBus {
     const data = payload?.data;
     const clientId = data?.client_id;
     const repzoInvoiceId = data?._id;
-const total = (Number(data.total) / 1000).toLocaleString("en-US");
+const total = Number(String(data.total).replace(/,/g, "")) / 1000;
 // "391,000"
     // Create delivery FIRST
     const delivery = await prisma.delivery.create({
