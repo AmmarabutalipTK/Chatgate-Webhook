@@ -123,10 +123,11 @@ export class InvoiceTemplate {
               ],
 
               ...invoice.items.map((item: any) => {
-                const productName =
-                  item?.variant?.product_name ??
-                  item?.product_name ??
-                  "منتج غير معروف";
+const productName = (
+  item.variant?.product_name ?? ""
+)
+  .replace(/^\*/, "")
+  .trim();
 
                 const unitPrice =
                   Number(item.price ?? 0) / 1000;
@@ -154,10 +155,10 @@ export class InvoiceTemplate {
                     alignment: "center",
                   },
 
-                  {
-                    text: productName,
-                    alignment: "right",
-                  },
+            {
+    text: productName,
+    alignment: "right",
+  },
                 ];
               }),
             ],
