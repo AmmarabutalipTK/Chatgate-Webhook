@@ -19,7 +19,7 @@
     "bidi-js": "^1.0.3",
     "crypto-js": "^4.2.0",
     "fastify": "^5.8.5",
-    "pdfmake": "^0.3.11",
+    "pdfmake": "0.2.20",
     "prisma": "^6.19.3",
     "puppeteer": "^25.2.1"
   },

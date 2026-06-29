@@ -1,6 +1,6 @@
 import path from "path";
 import { FastifyReply } from "fastify";
-import PdfPrinter from "pdfmake";
+import PdfPrinter = require("pdfmake");
 
 import { prisma } from "../prisma";
 import { InvoiceTemplate } from "./invoice.template";
@@ -54,21 +54,21 @@ export class PdfService {
       payload.data
     );
 
-    const pdf = printer.createPdfKitDocument(
-      docDefinition
-    );
+    const pdf =
+      printer.createPdfKitDocument(docDefinition);
 
-    reply.header(
+    reply.raw.setHeader(
       "Content-Type",
       "application/pdf"
     );
 
-    reply.header(
+    reply.raw.setHeader(
       "Content-Disposition",
       `attachment; filename="Invoice-${invoiceId}.pdf"`
     );
 
     pdf.pipe(reply.raw);
+
     pdf.end();
 
     return reply.hijack();
