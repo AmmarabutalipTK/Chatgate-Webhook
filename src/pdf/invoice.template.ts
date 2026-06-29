@@ -1,5 +1,17 @@
 import { TDocumentDefinitions } from "pdfmake/interfaces";
 
+// Unicode bidi control chars.
+// LRI/PDI isolate a run of LTR content (numbers, latin codes, phone numbers)
+// so it doesn't get visually reversed when placed inside RTL-aligned text.
+const LRI = "\u2066"; // Left-to-Right Isolate
+const PDI = "\u2069"; // Pop Directional Isolate
+
+/** Wrap any LTR token (numbers, IDs, phone numbers) so it renders correctly inside RTL alignment. */
+function ltr(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "-";
+  return `${LRI}${String(value)}${PDI}`;
+}
+
 export class InvoiceTemplate {
   static render(invoice: any): TDocumentDefinitions {
     const total = Number(invoice.total) / 1000;
@@ -22,7 +34,9 @@ export class InvoiceTemplate {
         },
 
         {
-          text: "96415474102+",
+          // was: "96415474102+"  -> bidi was flipping the + and digit order.
+          // ltr() isolates the number so it always reads +9641547... left-to-right.
+          text: ltr("+9641547410201"),
           alignment: "right",
           color: "gray",
           margin: [0, 0, 0, 20],
@@ -34,15 +48,11 @@ export class InvoiceTemplate {
               width: "*",
               stack: [
                 {
-                  text: `Invoice #: ${
-                    invoice.serial_number?.formatted ?? "-"
-                  }`,
+                  // Invoice number isolated so "INV-1020-278" doesn't get reordered.
+                  text: `Invoice #: ${ltr(invoice.serial_number?.formatted ?? "-")}`,
                 },
                 {
-                  text: `Date: ${
-                    invoice.issue_date ??
-                    invoice.createdAt
-                  }`,
+                  text: `Date: ${ltr(invoice.issue_date ?? invoice.createdAt)}`,
                 },
               ],
             },
@@ -55,8 +65,10 @@ export class InvoiceTemplate {
                   bold: true,
                 },
                 {
-                  text:
-                    invoice.client_name ?? "-",
+                  // was rendering "CC1234-" instead of "-1234CC" / correct order.
+                  // client_name often contains a mixed code (letters+digits+dash),
+                  // isolating it keeps the literal character order intact.
+                  text: ltr(invoice.client_name),
                   alignment: "right",
                 },
               ],
@@ -99,33 +111,41 @@ export class InvoiceTemplate {
                 },
               ],
 
-              ...invoice.items.map((item: any) => [
-                {
-                  text:
-                    item.variant.product_name,
-                  alignment: "right",
-                },
+              ...invoice.items.map((item: any) => {
+                // Guard against missing/malformed product data instead of
+                // silently rendering "*" with no way to tell what happened.
+                const productName =
+                  item?.variant?.product_name &&
+                  String(item.variant.product_name).trim().length > 0
+                    ? item.variant.product_name
+                    : "منتج غير معروف"; // "Unknown product" - visible fallback for bad data
 
-                {
-                  text: String(item.qty),
-                  alignment: "center",
-                },
+                return [
+                  {
+                    text: productName,
+                    alignment: "right",
+                  },
 
-                {
-                  text: (
-                    Number(item.price) / 1000
-                  ).toLocaleString("en-US"),
-                  alignment: "center",
-                },
+                  {
+                    text: ltr(item.qty),
+                    alignment: "center",
+                  },
 
-                {
-                  text: (
-                    Number(item.line_total) /
-                    1000
-                  ).toLocaleString("en-US"),
-                  alignment: "center",
-                },
-              ]),
+                  {
+                    text: ltr(
+                      (Number(item.price) / 1000).toLocaleString("en-US")
+                    ),
+                    alignment: "center",
+                  },
+
+                  {
+                    text: ltr(
+                      (Number(item.line_total) / 1000).toLocaleString("en-US")
+                    ),
+                    alignment: "center",
+                  },
+                ];
+              }),
             ],
           },
 
@@ -157,10 +177,7 @@ export class InvoiceTemplate {
                     },
 
                     {
-                      text:
-                        total.toLocaleString(
-                          "en-US"
-                        ) + " IQD",
+                      text: ltr(total.toLocaleString("en-US") + " IQD"),
                       bold: true,
                       alignment: "center",
                     },
