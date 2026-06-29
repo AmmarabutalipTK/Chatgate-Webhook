@@ -90,7 +90,7 @@ export class EventBus {
         delivery.id,
         `Customer loaded: ${client.name}`
       );
-
+const total = parseFloat(String(data.total).split(",")[0]);
       const clientPhone = client.phone;
       const clientName = client.name;
 
@@ -104,7 +104,7 @@ export class EventBus {
           },
           phone_no: clientPhone,
           client_name: clientName,
-          total: Number(data.total).toFixed(2),
+          total,
           invoiceId: repzoInvoiceId,
           msg,
         },

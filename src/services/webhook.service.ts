@@ -9,7 +9,9 @@ export class WebhookService {
   ) {
     const event = String(payload.event);
     const name = String(payload.client_name ?? "");
-    const total =payload.total.toFixed(2)
+const total = Number(payload.total);
+
+
     const invoiceId = String(payload.invoiceId ?? "");
 
     const phone_no = String(payload?.user?.phone_no ?? "")
