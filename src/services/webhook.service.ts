@@ -27,7 +27,7 @@ const pdfUrl = String(payload.pdfUrl)
     params.append("name", name);
 params.append("sum", total);
 if (payload.pdfUrl) {
-  params.append("pdf_url", String(payload.pdfUrl));
+  params.append("pdfUrl", String(payload.pdfUrl));
 }
     params.append("invoiceId", invoiceId);
 
