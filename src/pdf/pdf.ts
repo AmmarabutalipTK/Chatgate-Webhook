@@ -22,18 +22,20 @@ export class PdfService {
 
     const payload = JSON.parse(delivery.requestBody);
 
-    reply.header("Content-Type", "application/pdf");
-    reply.header(
-      "Content-Disposition",
-      `attachment; filename="Invoice-${invoiceId}.pdf"`
-    );
+const doc = new PDFDocument();
 
-    const doc = new PDFDocument();
+reply.raw.setHeader("Content-Type", "application/pdf");
+reply.raw.setHeader(
+  "Content-Disposition",
+  `attachment; filename="Invoice-${invoiceId}.pdf"`
+);
 
-    doc.pipe(reply.raw);
+doc.pipe(reply.raw);
 
-    InvoiceTemplate.render(doc, payload.data);
+InvoiceTemplate.render(doc, payload.data);
 
-    doc.end();
+doc.end();
+
+return reply.hijack();
   }
 }

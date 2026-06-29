@@ -111,6 +111,7 @@ const pdfUrl = `${process.env.BASE_URL}/invoice/${repzoInvoiceId}/download`;
           invoiceId: repzoInvoiceId,
           msg,
           pdfUrl
+          
         },
         delivery.id
       );
