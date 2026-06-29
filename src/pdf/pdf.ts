@@ -1,7 +1,34 @@
+import path from "path";
 import { FastifyReply } from "fastify";
-import puppeteer from "puppeteer";
+import PdfPrinter from "pdfmake";
+
 import { prisma } from "../prisma";
 import { InvoiceTemplate } from "./invoice.template";
+
+const printer = new PdfPrinter({
+  Cairo: {
+    normal: path.join(
+      process.cwd(),
+      "fonts",
+      "Cairo-Regular.ttf"
+    ),
+    bold: path.join(
+      process.cwd(),
+      "fonts",
+      "Cairo-Bold.ttf"
+    ),
+    italics: path.join(
+      process.cwd(),
+      "fonts",
+      "Cairo-Regular.ttf"
+    ),
+    bolditalics: path.join(
+      process.cwd(),
+      "fonts",
+      "Cairo-Bold.ttf"
+    ),
+  },
+});
 
 export class PdfService {
   static async download(
@@ -23,38 +50,27 @@ export class PdfService {
 
     const payload = JSON.parse(delivery.requestBody);
 
-    const html = InvoiceTemplate.render(payload.data);
+    const docDefinition = InvoiceTemplate.render(
+      payload.data
+    );
 
-    const browser = await puppeteer.launch({
-      headless: true,
-    });
+    const pdf = printer.createPdfKitDocument(
+      docDefinition
+    );
 
-    const page = await browser.newPage();
+    reply.header(
+      "Content-Type",
+      "application/pdf"
+    );
 
-await page.setContent(html, {
-  waitUntil: "load",
-});
+    reply.header(
+      "Content-Disposition",
+      `attachment; filename="Invoice-${invoiceId}.pdf"`
+    );
 
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: {
-        top: "20px",
-        bottom: "20px",
-        left: "20px",
-        right: "20px",
-      },
-    });
+    pdf.pipe(reply.raw);
+    pdf.end();
 
-    await browser.close();
-
-    reply
-      .type("application/pdf")
-      .header(
-        "Content-Disposition",
-        `attachment; filename="Invoice-${invoiceId}.pdf"`
-      );
-
-    return reply.send(pdf);
+    return reply.hijack();
   }
 }
