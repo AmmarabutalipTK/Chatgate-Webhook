@@ -24,7 +24,7 @@ const total = Number(payload.total);
     params.append("user.phone_no", phone_no);
     params.append("channel", "Whatsapp");
     params.append("name", name);
-params.append("total", total.toLocaleString("en-US"));
+params.append("sum", String(total));
     params.append("invoiceId", invoiceId);
 
     if (payload.msg) {

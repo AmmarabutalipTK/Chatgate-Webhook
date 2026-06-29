@@ -21,10 +21,11 @@ export class EventBus {
   }
 
   static async dispatch(payload: Record<string, any>) {
-    const clientId = payload?.data?.client_id;
     const data = payload?.data;
+    const clientId = data?.client_id;
     const repzoInvoiceId = data?._id;
-
+const total = (Number(data.total) / 1000).toLocaleString("en-US");
+// "391,000"
     // Create delivery FIRST
     const delivery = await prisma.delivery.create({
       data: {
@@ -90,7 +91,7 @@ export class EventBus {
         delivery.id,
         `Customer loaded: ${client.name}`
       );
-const total = Number(data.total) / 1000;
+
       const clientPhone = client.phone;
       const clientName = client.name;
 
