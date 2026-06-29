@@ -90,7 +90,7 @@ export class EventBus {
         delivery.id,
         `Customer loaded: ${client.name}`
       );
-const total = parseFloat(String(data.total).split(",")[0]);
+const total = Number(data.total) / 1000;
       const clientPhone = client.phone;
       const clientName = client.name;
 
