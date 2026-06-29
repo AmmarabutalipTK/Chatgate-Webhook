@@ -1,34 +1,7 @@
-import path from "path";
+import puppeteer from "puppeteer";
 import { FastifyReply } from "fastify";
-import PdfPrinter = require("pdfmake");
-
 import { prisma } from "../prisma";
 import { InvoiceTemplate } from "./invoice.template";
-
-const printer = new PdfPrinter({
-  Cairo: {
-    normal: path.join(
-      process.cwd(),
-      "fonts",
-      "Cairo-Regular.ttf"
-    ),
-    bold: path.join(
-      process.cwd(),
-      "fonts",
-      "Cairo-Bold.ttf"
-    ),
-    italics: path.join(
-      process.cwd(),
-      "fonts",
-      "Cairo-Regular.ttf"
-    ),
-    bolditalics: path.join(
-      process.cwd(),
-      "fonts",
-      "Cairo-Bold.ttf"
-    ),
-  },
-});
 
 export class PdfService {
   static async download(
@@ -44,33 +17,44 @@ export class PdfService {
     if (!delivery) {
       return reply.code(404).send({
         success: false,
-        message: "Invoice not found",
       });
     }
 
     const payload = JSON.parse(delivery.requestBody);
 
-    const docDefinition = InvoiceTemplate.render(
-      payload.data
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox"],
+    });
+
+    const page = await browser.newPage();
+
+    await page.setContent(
+      InvoiceTemplate.render(payload.data),
+      {
+        waitUntil: "load",
+      }
     );
 
-    const pdf =
-      printer.createPdfKitDocument(docDefinition);
+    const pdf = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: {
+        top: "20mm",
+        right: "20mm",
+        bottom: "20mm",
+        left: "20mm",
+      },
+    });
 
-    reply.raw.setHeader(
-      "Content-Type",
-      "application/pdf"
-    );
+    await browser.close();
 
-    reply.raw.setHeader(
-      "Content-Disposition",
-      `attachment; filename="Invoice-${invoiceId}.pdf"`
-    );
-
-    pdf.pipe(reply.raw);
-
-    pdf.end();
-
-    return reply.hijack();
+    reply
+      .type("application/pdf")
+      .header(
+        "Content-Disposition",
+        `attachment; filename="Invoice-${invoiceId}.pdf"`
+      )
+      .send(pdf);
   }
 }

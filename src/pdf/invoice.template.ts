@@ -1,225 +1,84 @@
-import { TDocumentDefinitions } from "pdfmake/interfaces";
+export class InvoiceTemplate {
+  static render(invoice: any) {
+    return `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 
-const LRI = "\u2066";
-const PDI = "\u2069";
+<head>
 
-function ltr(value: unknown): string {
-  if (value === null || value === undefined || value === "") {
-    return "-";
-  }
+<meta charset="utf-8">
 
-  return `${LRI}${String(value)}${PDI}`;
+<link
+href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap"
+rel="stylesheet">
+
+<style>
+
+body{
+font-family:'Cairo',sans-serif;
+padding:40px;
+direction:rtl;
 }
 
-export class InvoiceTemplate {
-  static render(invoice: any): TDocumentDefinitions {
-    const total = Number(invoice.total ?? 0) / 1000;
+table{
+width:100%;
+border-collapse:collapse;
+}
 
-    return {
-      defaultStyle: {
-        font: "Cairo",
-        fontSize: 11,
-      },
+th,td{
+border:1px solid #ddd;
+padding:10px;
+text-align:right;
+}
 
-      pageMargins: [40, 40, 40, 40],
+th{
+background:#f5f5f5;
+}
 
-      content: [
-{
-  text: [
-    { text: "للتوزيع ", bold: true },
-    { text: "العبدالله ", bold: true },
-    { text: "خيارات ", bold: true },
-    { text: ` `, bold: true },
-    { text: "شركة", bold: true },
-  ],
-  alignment: "right",
-  fontSize: 20,
-},
+</style>
 
-        {
-          text: ltr("+9641547410201"),
-          alignment: "right",
-          color: "gray",
-          margin: [0, 5, 0, 20],
-        },
+</head>
 
-        // Invoice Info
-        {
-          columns: [
-            {
-              width: "*",
-              stack: [
-                {
-                  text: "العميل",
-                  bold: true,
-                  alignment: "right",
-                },
-                {
-                  text: invoice.client_name ?? "-",
-                  alignment: "right",
-                },
-              ],
-            },
+<body>
 
-            {
-              width: "*",
-              stack: [
-                {
-                  text: `رقم الفاتورة: ${ltr(
-                    invoice.serial_number?.formatted
-                  )}`,
-                  alignment: "left",
-                },
+<h1>شركة خيارات العبدالله للتوزيع</h1>
 
-                {
-                  text: `التاريخ: ${ltr(
-                    invoice.issue_date ??
-                      invoice.createdAt
-                  )}`,
-                  alignment: "left",
-                },
-              ],
-            },
-          ],
-        },
+<p>${invoice.client_name}</p>
 
-        {
-          text: "",
-          margin: [0, 20],
-        },
+<table>
 
-        // Products
-        {
-          table: {
-            headerRows: 1,
+<thead>
 
-            widths: [90, 90, 60, "*"],
+<tr>
+<th>المنتج</th>
+<th>الكمية</th>
+<th>السعر</th>
+<th>الإجمالي</th>
+</tr>
 
-            body: [
-              [
-                {
-                  text: "الإجمالي",
-                  bold: true,
-                  alignment: "center",
-                },
+</thead>
 
-                {
-                  text: "السعر",
-                  bold: true,
-                  alignment: "center",
-                },
+<tbody>
 
-                {
-                  text: "الكمية",
-                  bold: true,
-                  alignment: "center",
-                },
+${invoice.items
+  .map(
+    (item: any) => `
+<tr>
+<td>${item.variant.product_name.replace(/^\*/, "")}</td>
+<td>${item.qty}</td>
+<td>${(item.price / 1000).toLocaleString()}</td>
+<td>${(item.line_total / 1000).toLocaleString()}</td>
+</tr>`
+  )
+  .join("")}
 
-                {
-                  text: "المنتج",
-                  bold: true,
-                  alignment: "right",
-                },
-              ],
+</tbody>
 
-              ...invoice.items.map((item: any) => {
-const productName = (
-  item.variant?.product_name ?? "من"
-)
+</table>
 
-                const unitPrice =
-                  Number(item.price ?? 0) / 1000;
+</body>
 
-                const lineTotal =
-                  Number(item.line_total ?? 0) / 1000;
-
-                return [
-                  {
-                    text: ltr(
-                      lineTotal.toLocaleString("en-US")
-                    ),
-                    alignment: "center",
-                  },
-
-                  {
-                    text: ltr(
-                      unitPrice.toLocaleString("en-US")
-                    ),
-                    alignment: "center",
-                  },
-
-                  {
-                    text: ltr(item.qty),
-                    alignment: "center",
-                  },
-
-            {
-    text: JSON.stringify(productName),
-    alignment: "right",
-    
-  },
-                ];
-              }),
-            ],
-          },
-
-          layout: "lightHorizontalLines",
-        },
-
-        {
-          text: "",
-          margin: [0, 20],
-        },
-
-        // Total
-        {
-          columns: [
-            {
-              width: "*",
-              text: "",
-            },
-
-            {
-              width: 220,
-
-              table: {
-                widths: ["*", 90],
-
-                body: [
-                  [
-                    {
-                      text: ltr(
-                        `${total.toLocaleString(
-                          "en-US"
-                        )} IQD`
-                      ),
-                      bold: true,
-                      alignment: "center",
-                    },
-
-                    {
-                      text: "الإجمالي",
-                      bold: true,
-                      alignment: "right",
-                    },
-                  ],
-                ],
-              },
-            },
-          ],
-        },
-
-        {
-          text: "",
-          margin: [0, 30],
-        },
-
-        {
-          text: "شكراً لتعاملكم معنا",
-          alignment: "center",
-          color: "gray",
-        },
-      ],
-    };
+</html>
+`;
   }
 }
