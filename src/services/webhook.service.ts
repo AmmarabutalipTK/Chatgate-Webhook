@@ -9,7 +9,7 @@ export class WebhookService {
   ) {
     const event = String(payload.event);
     const name = String(payload.client_name ?? "");
-    const total = Number(payload.total ?? 0);
+    const total =payload.total.toFixed(2)
     const invoiceId = String(payload.invoiceId ?? "");
 
     const phone_no = String(payload?.user?.phone_no ?? "")
@@ -36,7 +36,6 @@ export class WebhookService {
       
     const url = `${baseUrl}?${params.toString()}`;
 
-    console.log({url})
 
     await DeliveryLogger.info(
       deliveryId,
