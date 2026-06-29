@@ -1,35 +1,82 @@
 import path from "path";
 import { FastifyReply } from "fastify";
-import puppeteer from "puppeteer";
-import { prisma } from "../prisma";
-import { generateInvoiceHtml } from "./invoice.template";
+import PdfPrinter from "pdfmake";
 
+import { prisma } from "../prisma";
+import { InvoiceTemplate } from "./invoice.template";
+
+import fs from 'fs';
+
+const fontPath = path.join(process.cwd(), 'fonts', 'Cairo-Regular.ttf');
+
+console.log('Font exists:', fs.existsSync(fontPath)); // لازم يطبع true
+
+const printer = new PdfPrinter({
+  Cairo: {
+    normal: path.join(
+      process.cwd(),
+      "fonts",
+      "Cairo-Regular.ttf"
+    ),
+    bold: path.join(
+      process.cwd(),
+      "fonts",
+      "Cairo-Bold.ttf"
+    ),
+    italics: path.join(
+      process.cwd(),
+      "fonts",
+      "Cairo-Regular.ttf"
+    ),
+    bolditalics: path.join(
+      process.cwd(),
+      "fonts",
+      "Cairo-Bold.ttf"
+    ),
+  },
+});
 
 export class PdfService {
-  static async download(invoiceId: string, reply: FastifyReply) {
+  static async download(
+    invoiceId: string,
+    reply: FastifyReply
+  ) {
     const delivery = await prisma.delivery.findFirst({
-      where: { invoiceId },
+      where: {
+        invoiceId,
+      },
     });
 
     if (!delivery) {
-      return reply.code(404).send({ success: false, message: "Invoice not found" });
+      return reply.code(404).send({
+        success: false,
+        message: "Invoice not found",
+      });
     }
 
     const payload = JSON.parse(delivery.requestBody);
-    const html = generateInvoiceHtml(payload.data);
 
-    const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
-    const page = await browser.newPage();
-    
-    await page.setContent(html, { waitUntil: 'load' }); // ينتظر تحميل الخط
-    
-    const pdfBuffer = await page.pdf({ format: 'A4', margin: { top: 40, bottom: 40, left: 40, right: 40 } });
-    
-    await browser.close();
+    const docDefinition = InvoiceTemplate.render(
+      payload.data
+    );
 
-    reply.header("Content-Type", "application/pdf");
-    reply.header("Content-Disposition", `attachment; filename="Invoice-${invoiceId}.pdf"`);
-    
-    return reply.send(pdfBuffer);
+    const pdf = printer.createPdfKitDocument(
+      docDefinition
+    );
+
+    reply.header(
+      "Content-Type",
+      "application/pdf"
+    );
+
+    reply.header(
+      "Content-Disposition",
+      `attachment; filename="Invoice-${invoiceId}.pdf"`
+    );
+
+    pdf.pipe(reply.raw);
+    pdf.end();
+
+    return reply.hijack();
   }
 }
