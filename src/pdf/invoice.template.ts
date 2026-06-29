@@ -25,12 +25,16 @@ export class InvoiceTemplate {
 
       content: [
         // Header
-        {
-          text: "شركة خيارات العبدالله للتوزيع",
-          alignment: "right",
-          bold: true,
-          fontSize: 20,
-        },
+{
+  text: [
+    { text: "شركة ", bold: true },
+    { text: "خيارات ", bold: true },
+    { text: "العبدالله ", bold: true },
+    { text: "للتوزيع", bold: true },
+  ],
+  alignment: "right",
+  fontSize: 20,
+},
 
         {
           text: ltr("+9641547410201"),
