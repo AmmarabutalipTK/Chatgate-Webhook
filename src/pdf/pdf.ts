@@ -5,11 +5,6 @@ import PdfPrinter from "pdfmake";
 import { prisma } from "../prisma";
 import { InvoiceTemplate } from "./invoice.template";
 
-import fs from 'fs';
-
-const fontPath = path.join(process.cwd(), 'fonts', 'Cairo-Regular.ttf');
-
-console.log('Font exists:', fs.existsSync(fontPath)); // لازم يطبع true
 
 const printer = new PdfPrinter({
   Cairo: {
