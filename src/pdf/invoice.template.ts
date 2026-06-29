@@ -26,7 +26,7 @@ export class InvoiceTemplate {
       content: [
         // Header
 {
-  text: "شركة\u00A0خيارات\u00A0العبدالله\u00A0للتوزيع",
+  text: "rrr\u00A0خيارات\u00A0العبدالله\u00A0للتوزيع",
   alignment: "right",
   bold: true,
   fontSize: 20,
