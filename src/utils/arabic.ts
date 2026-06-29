@@ -6,12 +6,9 @@ const bidi = bidiFactory();
 export function arabic(text?: string) {
   if (!text) return "";
 
-  // Shape Arabic letters
   const shaped = ArabicShaper.convertArabic(text);
 
-  // Reorder for RTL
-  return bidi.getReorderedString(
-    shaped,
-    bidi.getEmbeddingLevels(shaped).paragraphs[0]
-  );
+  const embedding = bidi.getEmbeddingLevels(shaped);
+
+  return bidi.getReorderedString(shaped, embedding);
 }
