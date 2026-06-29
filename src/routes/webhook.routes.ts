@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { eventBus } from "../events/event-bus";
+import { EventBus } from "../events/event-bus";
 import { EventType } from "../events/event-types";
 import { prisma } from "../prisma";
 
@@ -50,7 +50,7 @@ export async function eventRoutes(
       console.log(JSON.stringify(request.body, null, 2));
 
       try {
-        await eventBus.dispatch({
+        await EventBus.dispatch({
           event,
           Channel: "Whatsapp",
           data: request.body,

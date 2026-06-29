@@ -32,7 +32,11 @@ export class WebhookService {
     const baseUrl =
       "https://api.chatgate.io/bot-api/v1.0/customer/125419/bot/899870cca0c847b4/flow/6A279921EE5B46779084F487191483C5";
 
+
+      
     const url = `${baseUrl}?${params.toString()}`;
+
+    console.log({url})
 
     await DeliveryLogger.info(
       deliveryId,
@@ -93,6 +97,7 @@ export class WebhookService {
       );
 
       await prisma.delivery.update({
+        
         where: {
           id: deliveryId,
         },
