@@ -10,9 +10,10 @@ export class WebhookService {
     const event = String(payload.event);
     const name = String(payload.client_name ?? "");
 const total = String(payload.total ?? "");
-
+const pdfUrl = String(payload.pdfUrl)
 
     const invoiceId = String(payload.invoiceId ?? "");
+
 
     const phone_no = String(payload?.user?.phone_no ?? "")
       .replace(/^\+/, "")
@@ -25,6 +26,9 @@ const total = String(payload.total ?? "");
     params.append("channel", "Whatsapp");
     params.append("name", name);
 params.append("sum", total);
+if (payload.pdfUrl) {
+  params.append("pdf_url", String(payload.pdfUrl));
+}
     params.append("invoiceId", invoiceId);
 
     if (payload.msg) {

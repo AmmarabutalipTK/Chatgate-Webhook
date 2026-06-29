@@ -98,7 +98,7 @@ const total = (
       const clientName = client.name;
 
       const msg = `مرحبا ${clientName} طلبك جاهز`;
-
+const pdfUrl = `${process.env.BASE_URL}/invoice/${repzoInvoiceId}/download`;
       return WebhookService.send(
         {
           event: payload.event,
@@ -110,6 +110,7 @@ const total = (
           total,
           invoiceId: repzoInvoiceId,
           msg,
+          pdfUrl
         },
         delivery.id
       );

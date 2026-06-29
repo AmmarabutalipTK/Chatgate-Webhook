@@ -2,6 +2,8 @@ import { FastifyInstance } from "fastify";
 import { EventBus } from "../events/event-bus";
 import { EventType } from "../events/event-types";
 import { prisma } from "../prisma";
+import { PdfService } from "../pdf/pdf";
+
 
 export async function eventRoutes(
   fastify: FastifyInstance
@@ -115,4 +117,15 @@ export async function eventRoutes(
     "/events/workorder-created",
     handleEvent(EventType.WORKORDER_CREATED)
   );
+
+  fastify.get(
+  "/invoice/:invoiceId/download",
+  async (request, reply) => {
+    const { invoiceId } = request.params as {
+      invoiceId: string;
+    };
+
+    return PdfService.download(invoiceId, reply);
+  }
+);
 }
