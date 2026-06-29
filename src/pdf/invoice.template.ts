@@ -1,20 +1,19 @@
 import { TDocumentDefinitions } from "pdfmake/interfaces";
 
-// Unicode bidi control chars.
-// LRI/PDI isolate a run of LTR content (numbers, latin codes, phone numbers)
-// so it doesn't get visually reversed when placed inside RTL-aligned text.
-const LRI = "\u2066"; // Left-to-Right Isolate
-const PDI = "\u2069"; // Pop Directional Isolate
+const LRI = "\u2066";
+const PDI = "\u2069";
 
-/** Wrap any LTR token (numbers, IDs, phone numbers) so it renders correctly inside RTL alignment. */
 function ltr(value: unknown): string {
-  if (value === null || value === undefined || value === "") return "-";
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
   return `${LRI}${String(value)}${PDI}`;
 }
 
 export class InvoiceTemplate {
   static render(invoice: any): TDocumentDefinitions {
-    const total = Number(invoice.total) / 1000;
+    const total = Number(invoice.total ?? 0) / 1000;
 
     return {
       defaultStyle: {
@@ -25,51 +24,55 @@ export class InvoiceTemplate {
       pageMargins: [40, 40, 40, 40],
 
       content: [
+        // Header
         {
           text: "شركة خيارات العبدالله للتوزيع",
           alignment: "right",
           bold: true,
           fontSize: 20,
-          margin: [0, 0, 0, 5],
         },
 
         {
-          // was: "96415474102+"  -> bidi was flipping the + and digit order.
-          // ltr() isolates the number so it always reads +9641547... left-to-right.
           text: ltr("+9641547410201"),
           alignment: "right",
           color: "gray",
-          margin: [0, 0, 0, 20],
+          margin: [0, 5, 0, 20],
         },
 
+        // Invoice Info
         {
           columns: [
             {
               width: "*",
               stack: [
                 {
-                  // Invoice number isolated so "INV-1020-278" doesn't get reordered.
-                  text: `Invoice #: ${ltr(invoice.serial_number?.formatted ?? "-")}`,
+                  text: "العميل",
+                  bold: true,
+                  alignment: "right",
                 },
                 {
-                  text: `Date: ${ltr(invoice.issue_date ?? invoice.createdAt)}`,
+                  text: invoice.client_name ?? "-",
+                  alignment: "right",
                 },
               ],
             },
+
             {
               width: "*",
               stack: [
                 {
-                  text: `العميل`,
-                  alignment: "right",
-                  bold: true,
+                  text: `رقم الفاتورة: ${ltr(
+                    invoice.serial_number?.formatted
+                  )}`,
+                  alignment: "left",
                 },
+
                 {
-                  // was rendering "CC1234-" instead of "-1234CC" / correct order.
-                  // client_name often contains a mixed code (letters+digits+dash),
-                  // isolating it keeps the literal character order intact.
-                  text: ltr(invoice.client_name),
-                  alignment: "right",
+                  text: `التاريخ: ${ltr(
+                    invoice.issue_date ??
+                      invoice.createdAt
+                  )}`,
+                  alignment: "left",
                 },
               ],
             },
@@ -78,52 +81,68 @@ export class InvoiceTemplate {
 
         {
           text: "",
-          margin: [0, 15],
+          margin: [0, 20],
         },
 
+        // Products
         {
           table: {
             headerRows: 1,
 
-            widths: ["*", 60, 90, 90],
+            widths: [90, 90, 60, "*"],
 
             body: [
               [
-                {
-                  text: "المنتج",
-                  bold: true,
-                  alignment: "right",
-                },
-                {
-                  text: "الكمية",
-                  bold: true,
-                  alignment: "center",
-                },
-                {
-                  text: "السعر",
-                  bold: true,
-                  alignment: "center",
-                },
                 {
                   text: "الإجمالي",
                   bold: true,
                   alignment: "center",
                 },
+
+                {
+                  text: "السعر",
+                  bold: true,
+                  alignment: "center",
+                },
+
+                {
+                  text: "الكمية",
+                  bold: true,
+                  alignment: "center",
+                },
+
+                {
+                  text: "المنتج",
+                  bold: true,
+                  alignment: "right",
+                },
               ],
 
               ...invoice.items.map((item: any) => {
-                // Guard against missing/malformed product data instead of
-                // silently rendering "*" with no way to tell what happened.
                 const productName =
-                  item?.variant?.product_name &&
-                  String(item.variant.product_name).trim().length > 0
-                    ? item.variant.product_name
-                    : "منتج غير معروف"; // "Unknown product" - visible fallback for bad data
+                  item?.variant?.product_name ??
+                  item?.product_name ??
+                  "منتج غير معروف";
+
+                const unitPrice =
+                  Number(item.price ?? 0) / 1000;
+
+                const lineTotal =
+                  Number(item.line_total ?? 0) / 1000;
 
                 return [
                   {
-                    text: productName,
-                    alignment: "right",
+                    text: ltr(
+                      lineTotal.toLocaleString("en-US")
+                    ),
+                    alignment: "center",
+                  },
+
+                  {
+                    text: ltr(
+                      unitPrice.toLocaleString("en-US")
+                    ),
+                    alignment: "center",
                   },
 
                   {
@@ -132,17 +151,8 @@ export class InvoiceTemplate {
                   },
 
                   {
-                    text: ltr(
-                      (Number(item.price) / 1000).toLocaleString("en-US")
-                    ),
-                    alignment: "center",
-                  },
-
-                  {
-                    text: ltr(
-                      (Number(item.line_total) / 1000).toLocaleString("en-US")
-                    ),
-                    alignment: "center",
+                    text: productName,
+                    alignment: "right",
                   },
                 ];
               }),
@@ -157,6 +167,7 @@ export class InvoiceTemplate {
           margin: [0, 20],
         },
 
+        // Total
         {
           columns: [
             {
@@ -168,18 +179,24 @@ export class InvoiceTemplate {
               width: 220,
 
               table: {
+                widths: ["*", 90],
+
                 body: [
                   [
+                    {
+                      text: ltr(
+                        `${total.toLocaleString(
+                          "en-US"
+                        )} IQD`
+                      ),
+                      bold: true,
+                      alignment: "center",
+                    },
+
                     {
                       text: "الإجمالي",
                       bold: true,
                       alignment: "right",
-                    },
-
-                    {
-                      text: ltr(total.toLocaleString("en-US") + " IQD"),
-                      bold: true,
-                      alignment: "center",
                     },
                   ],
                 ],
