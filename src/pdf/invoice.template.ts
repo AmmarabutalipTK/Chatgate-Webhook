@@ -124,7 +124,7 @@ export class InvoiceTemplate {
 
               ...invoice.items.map((item: any) => {
 const productName = (
-  item.variant?.product_name ?? "منتج"
+  item.variant?.product_name ?? "من"
 )
 
                 const unitPrice =
@@ -154,9 +154,10 @@ const productName = (
                   },
 
             {
-    text: "منتج",
+    text: JSON.stringify(productName),
     alignment: "right",
-    bold:true
+      characterSpacing: 0,
+
   },
                 ];
               }),
