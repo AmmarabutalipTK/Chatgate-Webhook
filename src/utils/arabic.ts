@@ -1,4 +1,4 @@
-import { reshape } from "arabic-persian-reshaper";
+import { ArabicShaper } from "arabic-persian-reshaper";
 import bidiFactory from "bidi-js";
 
 const bidi = bidiFactory();
@@ -6,10 +6,12 @@ const bidi = bidiFactory();
 export function arabic(text?: string) {
   if (!text) return "";
 
-  const reshaped = reshape(text);
+  // Shape Arabic letters
+  const shaped = ArabicShaper.convertArabic(text);
 
+  // Reorder for RTL
   return bidi.getReorderedString(
-    reshaped,
-    bidi.getEmbeddingLevels(reshaped).paragraphs[0]
+    shaped,
+    bidi.getEmbeddingLevels(shaped).paragraphs[0]
   );
 }
