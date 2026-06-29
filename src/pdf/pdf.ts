@@ -1,35 +1,8 @@
-import path from "path";
 import { FastifyReply } from "fastify";
 import PdfPrinter from "pdfmake";
 
 import { prisma } from "../prisma";
 import { InvoiceTemplate } from "./invoice.template";
-
-
-const printer = new PdfPrinter({
-  Cairo: {
-    normal: path.join(
-      process.cwd(),
-      "fonts",
-      "Cairo-Regular.ttf"
-    ),
-    bold: path.join(
-      process.cwd(),
-      "fonts",
-      "Cairo-Bold.ttf"
-    ),
-    italics: path.join(
-      process.cwd(),
-      "fonts",
-      "Cairo-Regular.ttf"
-    ),
-    bolditalics: path.join(
-      process.cwd(),
-      "fonts",
-      "Cairo-Bold.ttf"
-    ),
-  },
-});
 
 export class PdfService {
   static async download(
@@ -51,20 +24,27 @@ export class PdfService {
 
     const payload = JSON.parse(delivery.requestBody);
 
+    const printer = new PdfPrinter({
+      Cairo: {
+        normal: "fonts/Cairo-Regular.ttf",
+        bold: "fonts/Cairo-Bold.ttf",
+        italics: "fonts/Cairo-Regular.ttf",
+        bolditalics: "fonts/Cairo-Bold.ttf",
+      },
+    });
+
     const docDefinition = InvoiceTemplate.render(
       payload.data
     );
 
-    const pdf = printer.createPdfKitDocument(
-      docDefinition
-    );
+    const pdf = printer.createPdfKitDocument(docDefinition);
 
-    reply.header(
+    reply.raw.setHeader(
       "Content-Type",
       "application/pdf"
     );
 
-    reply.header(
+    reply.raw.setHeader(
       "Content-Disposition",
       `attachment; filename="Invoice-${invoiceId}.pdf"`
     );
