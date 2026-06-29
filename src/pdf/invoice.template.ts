@@ -156,7 +156,7 @@ const productName = (
                   },
 
             {
-      text: "Hello كباب World",
+    text: JSON.stringify(productName),
     alignment: "right",
   },
                 ];
