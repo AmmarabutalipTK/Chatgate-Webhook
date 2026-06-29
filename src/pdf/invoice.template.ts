@@ -154,7 +154,7 @@ const productName = (
                   },
 
             {
-    text: JSON.stringify(productName),
+    text: "منتج تجريبي",
     alignment: "right",
       characterSpacing: 0,
 
