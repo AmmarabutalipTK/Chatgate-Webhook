@@ -9,7 +9,7 @@ export class WebhookService {
   ) {
     const event = String(payload.event);
     const name = String(payload.client_name ?? "");
-const total = Number(payload.total);
+const total = String(payload.total ?? "");
 
 
     const invoiceId = String(payload.invoiceId ?? "");
@@ -24,7 +24,7 @@ const total = Number(payload.total);
     params.append("user.phone_no", phone_no);
     params.append("channel", "Whatsapp");
     params.append("name", name);
-params.append("sum", String(total));
+params.append("sum", total);
     params.append("invoiceId", invoiceId);
 
     if (payload.msg) {
