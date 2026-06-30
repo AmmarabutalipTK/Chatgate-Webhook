@@ -6,10 +6,19 @@ const logo = fs.readFileSync(
 );
 const logoBase64 = logo.toString("base64");
 
+const formatDate = (date?: string) =>
+  date
+    ? new Date(date).toLocaleDateString("ar-IQ", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+    : "-";
+
 export class InvoiceTemplate {
   static render(invoice: any) {
-    const formatMoney = (value: number) =>
-      `${(value / 1000).toLocaleString("en-US")} IQD`;
+ const formatMoney = (value: number = 0) =>
+  `${(Number(value) / 1000).toLocaleString("en-US")} IQD`;
 
     const statusMap: Record<string, string> = {
   unpaid: "غير مدفوعة",
@@ -18,6 +27,13 @@ export class InvoiceTemplate {
 };
 
 const status = statusMap[invoice.status] ?? invoice.status;
+
+const statusColor =
+  invoice.status === "paid"
+    ? "#16a34a"
+    : invoice.status === "void"
+    ? "#6b7280"
+    : "#dc2626";
 
     return `
 <!DOCTYPE html>
@@ -240,22 +256,24 @@ ${invoice.client_name ?? "-"}
 
 <div class="info">
 <div class="label">تاريخ الإنشاء</div>
-<div class="value">${invoice.createdAt ?? "-"}}</div>
+<div class="value">${formatDate(invoice.createdAt)}</div>
 </div>
 
 <div class="info">
 <div class="label">تاريخ الإصدار</div>
-<div class="value">${new Date(invoice.issue_date).toLocaleDateString("ar-IQ")}</div>
+<div class="value">${formatDate(invoice.issue_date)}</div>
 </div>
 
 <div class="info">
 <div class="label">تاريخ الاستحقاق</div>
-<div class="value">${invoice.due_date ?? "-"}</div>
+<div class="value">${formatDate(invoice.due_date)}</div>
 </div>
 
 <div class="info">
 <div class="label">حالة الفاتورة</div>
-<div class="status">
+<div
+class="status"
+style="background:${statusColor}">
 ${status}
 </div>
 </div>
@@ -278,6 +296,29 @@ ${status}
 <div class="info">
 <div class="label">التعليق</div>
 <div class="value">${invoice.comment ?? "-"}</div>
+</div>
+
+
+
+
+<div class="info">
+<div class="label">طريقة الدفع</div>
+<div class="value">
+${invoice.invoice_payment_type === "cash"
+  ? "نقداً"
+  : invoice.invoice_payment_type ?? "-"}
+</div>
+</div>
+
+
+
+<div class="info">
+<div class="label">حالة التسليم</div>
+<div class="value">
+${invoice.delivered_status === "delivered"
+  ? "تم التسليم"
+  : "قيد التنفيذ"}
+</div>
 </div>
 
 </div>
@@ -341,27 +382,29 @@ ${item.variant?.product_name?.replace(/^\\*/, "") ?? ""}
 <table>
 
 <tr>
-
-<td>المجموع قبل الضريبة</td>
-
-<td>${formatMoney(invoice.subtotal ?? invoice.total)}</td>
-
+<td>المجموع الفرعي</td>
+<td>${formatMoney(invoice.subtotal)}</td>
 </tr>
 
 <tr>
-
-<td>قيمة الخصم</td>
-
-<td>${formatMoney(invoice.discount_amount ?? 0)}</td>
-
+<td>الخصم</td>
+<td>${formatMoney(invoice.discount_amount)}</td>
 </tr>
 
+${Object.values(invoice.taxes ?? {})
+  .map(
+    (tax: any) => `
+<tr>
+<td>${tax.name} (${tax.rate}%)</td>
+<td>${formatMoney(tax.total)}
+</td>
+</tr>`
+  )
+  .join("")}
+
 <tr class="grand-total">
-
-<td>المبلغ الإجمالي</td>
-
+<td>الإجمالي</td>
 <td>${formatMoney(invoice.total)}</td>
-
 </tr>
 
 </table>
