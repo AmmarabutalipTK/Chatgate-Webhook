@@ -120,7 +120,7 @@ await prisma.delivery.update({
           total,
           invoiceId: repzoInvoiceId,
           pdfUrl,
-          type: +data?.total>0?"قطع":"الغاء",
+          event_type: +data?.total>0?"قطع":"الغاء",
           msg:`${repzoInvoiceId} بقيمة ${total} د.ع.`
           
         },

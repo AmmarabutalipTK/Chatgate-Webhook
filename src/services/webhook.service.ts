@@ -12,7 +12,7 @@ export class WebhookService {
 const total = String(payload.total ?? "");
 const pdfUrl = String(payload.pdfUrl)
 
-const type = String(payload?.type)
+const event_type = String(payload?.event_type)
 const msg = String(payload?.msg)
 
     const invoiceId = String(payload.invoiceId ?? "");
@@ -30,7 +30,7 @@ const msg = String(payload?.msg)
     params.append("name", name);
 params.append("sum", total);
 params.append("msg", msg);
-params.append("type", type);
+params.append("event_type", event_type);
 if (payload.pdfUrl) {
   params.append("pdfUrl", pdfUrl);
 }
