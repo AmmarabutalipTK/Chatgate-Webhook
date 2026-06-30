@@ -109,6 +109,20 @@ await prisma.delivery.update({
     phoneNo: clientPhone,
   },
 });
+
+let msg = "";
+
+if (+total < 0) {
+  msg = "إلغاء";
+} else if (data?.status === "consumed") {
+  msg = "دفع";
+} else if (data?.status === "unpaid") {
+  msg = "إنشاء";
+} else {
+  msg = "تحديث";
+}
+
+
       return WebhookService.send(
         {
           event: payload.event,
