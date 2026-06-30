@@ -23,7 +23,7 @@ export class EventBus {
   static async dispatch(payload: Record<string, any>) {
     const data = payload?.data;
     const clientId = data?.client_id;
-    const repzoInvoiceId = data?._id;
+    const repzoInvoiceId = data?.serial_number?.formatted;
 const total = (
   Number(String(data.total).replace(/,/g, "")) / 1000
 ).toLocaleString("en-US");
@@ -32,7 +32,7 @@ const total = (
     const delivery = await prisma.delivery.create({
       data: {
         event: payload.event,
-        invoiceId: data.serial_number?.formatted,
+        invoiceId: repzoInvoiceId,
         requestBody: JSON.stringify(payload),
         responseBody: "",
         statusCode: 0,
