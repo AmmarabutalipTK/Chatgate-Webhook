@@ -239,7 +239,7 @@ ${invoice.tax_number ?? "-"}
 
 <div>
 <strong>اسم العميل:</strong>
-${invoice.client_name ?? "-"}
+${invoice.client_name?.replace(/^[^-]+-\s*/, "") ?? "-"}
 </div>
 
   <div>
@@ -280,7 +280,9 @@ ${status}
 
 <div class="info">
 <div class="label">رمز العميل</div>
-<div class="value">${invoice.client_id ?? "-"}</div>
+<div class="value">
+${invoice.client_id?.slice(-6) ?? "-"}
+</div>
 </div>
 
 <div class="info">
@@ -359,7 +361,7 @@ item.variant?.variant_sku ??
 "-"}</td>
 
 <td style="text-align:right;padding-right:15px;">
-${item.variant?.product_name?.replace(/^\\*/, "") ?? ""}
+${item.variant?.product_name?.replace(/^\*+/, "").trim() ?? ""}
 </td>
 
 <td>${item.qty}</td>
