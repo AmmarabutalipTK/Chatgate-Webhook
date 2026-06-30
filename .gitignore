@@ -11,6 +11,12 @@ generated/prisma/
 # Optional: Prisma generated folder if using a custom output
 prisma/generated/
 
+# SQLite database
+dev.db
+dev.db-journal
+*.db
+*.db-journal
+
 # Logs
 *.log
 
