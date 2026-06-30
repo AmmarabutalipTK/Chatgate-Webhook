@@ -66,12 +66,20 @@ export class PdfService {
         },
       });
 
-      reply
+      const fileName = `Invoice-${invoiceId}.pdf`;
+
+      return reply
+        .code(200)
         .type("application/pdf")
         .header(
           "Content-Disposition",
-          `attachment; filename="Invoice-${invoiceId}.pdf"`
+          `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(
+            fileName
+          )}`
         )
+        .header("Content-Length", pdf.length)
+        .header("Content-Type", "application/pdf")
+        .header("X-Content-Type-Options", "nosniff")
         .send(pdf);
     } finally {
       await browser.close();

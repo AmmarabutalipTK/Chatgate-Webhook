@@ -25,7 +25,7 @@ export class EventBus {
     const clientId = data?.client_id;
     const repzoInvoiceId = data?.serial_number?.formatted;
 const total = (
-  Number(String(data.total).replace(/,/g, "")) / 1000
+  Number(String(data.total??data.amount).replace(/,/g, "")) / 1000
 ).toLocaleString("en-US");
 // "391,000"
     // Create delivery FIRST
