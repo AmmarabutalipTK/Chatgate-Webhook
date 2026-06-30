@@ -32,7 +32,7 @@ const total = (
     const delivery = await prisma.delivery.create({
       data: {
         event: payload.event,
-        invoiceId: repzoInvoiceId,
+        invoiceId: data.serial_number?.formatted,
         requestBody: JSON.stringify(payload),
         responseBody: "",
         statusCode: 0,
