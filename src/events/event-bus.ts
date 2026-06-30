@@ -98,7 +98,7 @@ const total = (
       const clientPhone = client.phone;
       const clientName = client.name;
 
-const pdfUrl = `${process.env.BASE_URL}/invoice/${repzoInvoiceId}/download`;
+const pdfUrl = `${process.env.BASE_URL}/invoice/${repzoInvoiceId}.pdf`;
 await prisma.delivery.update({
   where: {
     id: delivery.id,

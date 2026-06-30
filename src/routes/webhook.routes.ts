@@ -118,8 +118,8 @@ export async function eventRoutes(
     handleEvent(EventType.WORKORDER_CREATED)
   );
 
-  fastify.get(
-  "/invoice/:invoiceId/download",
+fastify.get(
+  "/invoice/:invoiceId.pdf",
   async (request, reply) => {
     const { invoiceId } = request.params as {
       invoiceId: string;
