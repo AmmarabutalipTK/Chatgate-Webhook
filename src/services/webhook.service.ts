@@ -12,6 +12,9 @@ export class WebhookService {
 const total = String(payload.total ?? "");
 const pdfUrl = String(payload.pdfUrl)
 
+const type = String(payload?.type)
+const msg = String(payload?.msg)
+
     const invoiceId = String(payload.invoiceId ?? "");
 
 
@@ -26,6 +29,8 @@ const pdfUrl = String(payload.pdfUrl)
     params.append("channel", "Whatsapp");
     params.append("name", name);
 params.append("sum", total);
+params.append("msg", msg);
+params.append("type", type);
 if (payload.pdfUrl) {
   params.append("pdfUrl", pdfUrl);
 }

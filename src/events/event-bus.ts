@@ -81,7 +81,8 @@ const total = (
     //   return;
     // }
 
-    if (clientId && +data?.total>0) {
+    if (clientId) {
+      
       await DeliveryLogger.info(
         delivery.id,
         `Fetching Repzo customer ${clientId}`
@@ -97,7 +98,6 @@ const total = (
       const clientPhone = client.phone;
       const clientName = client.name;
 
-      const msg = `مرحبا ${clientName} طلبك جاهز`;
 const pdfUrl = `${process.env.BASE_URL}/invoice/${repzoInvoiceId}/download`;
 await prisma.delivery.update({
   where: {
@@ -119,8 +119,9 @@ await prisma.delivery.update({
           client_name: clientName,
           total,
           invoiceId: repzoInvoiceId,
-          msg,
-          pdfUrl
+          pdfUrl,
+          type: +data?.total>0?"قطع":"الغاء",
+          msg:`${repzoInvoiceId} بقيمة ${total} د.ع.`
           
         },
         delivery.id
