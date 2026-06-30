@@ -1,3 +1,11 @@
+import fs from "fs";
+import path from "path";
+
+const logo = fs.readFileSync(
+  path.join(__dirname, "../assets/logo.png")
+);
+const logoBase64 = logo.toString("base64");
+
 export class InvoiceTemplate {
   static render(invoice: any) {
     const formatMoney = (value: number) =>
@@ -185,7 +193,7 @@ font-size:12px;
 </div>
 
 <div class="logo">
-<img src="../assets/logo.png" />
+<img src="data:image/png;base64,${logoBase64}" />
 </div>
 
 </div>

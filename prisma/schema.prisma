@@ -12,6 +12,9 @@ model Delivery {
 
   event        String
   invoiceId    String?
+
+  clientId     String?
+  clientName   String?
   phoneNo      String?
 
   requestBody  String
@@ -25,6 +28,7 @@ model Delivery {
   logs DeliveryLog[]
 
   @@index([invoiceId])
+  @@index([clientId])
   @@index([phoneNo, createdAt])
 }
 

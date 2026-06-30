@@ -67,16 +67,16 @@ const total = (
     //     `Duplicate invoice ${repzoInvoiceId} detected`
     //   );
 
-    //   await prisma.delivery.update({
-    //     where: {
-    //       id: delivery.id,
-    //     },
-    //     data: {
-    //       success: false,
-    //       statusCode: 409,
-    //       responseBody: "Duplicate invoice",
-    //     },
-    //   });
+      // await prisma.delivery.update({
+      //   where: {
+      //     id: delivery.id,
+      //   },
+      //   data: {
+      //     success: false,
+      //     statusCode: 409,
+      //     responseBody: "Duplicate invoice",
+      //   },
+      // });
 
     //   return;
     // }
@@ -99,6 +99,16 @@ const total = (
 
       const msg = `مرحبا ${clientName} طلبك جاهز`;
 const pdfUrl = `${process.env.BASE_URL}/invoice/${repzoInvoiceId}/download`;
+await prisma.delivery.update({
+  where: {
+    id: delivery.id,
+  },
+  data: {
+    clientId,
+    clientName,
+    phoneNo: clientPhone,
+  },
+});
       return WebhookService.send(
         {
           event: payload.event,
