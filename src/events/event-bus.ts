@@ -120,7 +120,11 @@ if (+total < 0) {
   msg = "إنشاء";
 } else {
   msg = "تحديث";
-}
+}   
+
+  if(clientPhone==="966551753513") { 
+
+
 
 
       return WebhookService.send(
@@ -141,7 +145,7 @@ if (+total < 0) {
         delivery.id
       );
     }
-
+      } 
     return WebhookService.send(payload, delivery.id);
   }
 }
