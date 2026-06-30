@@ -112,7 +112,7 @@ await prisma.delivery.update({
 
 let msg = "";
 
-if (+total < 0) {
+if (+total < 0 && data?.status !== "consumed") {
   msg = "إلغاء";
 } else if (data?.status === "consumed") {
   msg = "دفع";
