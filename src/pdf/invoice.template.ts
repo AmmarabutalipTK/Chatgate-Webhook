@@ -222,11 +222,11 @@ font-size:12px;
 
 </div>
 
-<div class="top-row">
+<div class="top-row">س
 
 <div class="company">
 
-<h2>شركة خيارات العبدالله للتوزيع</h2>
+<h2>شركة خيرات العبدالله للتوزيع</h2>
 
 <div>
 <strong>الرقم الضريبي:</strong>
