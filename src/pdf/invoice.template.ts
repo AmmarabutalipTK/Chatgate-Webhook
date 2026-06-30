@@ -11,6 +11,14 @@ export class InvoiceTemplate {
     const formatMoney = (value: number) =>
       `${(value / 1000).toLocaleString("en-US")} IQD`;
 
+    const statusMap: Record<string, string> = {
+  unpaid: "غير مدفوعة",
+  paid: "مدفوعة",
+  void: "ملغية",
+};
+
+const status = statusMap[invoice.status] ?? invoice.status;
+
     return `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -53,7 +61,7 @@ font-weight:700;
 }
 
 .logo img{
-height:75px;
+height:100px;
 }
 
 .company{
@@ -218,11 +226,10 @@ ${invoice.tax_number ?? "-"}
 ${invoice.client_name ?? "-"}
 </div>
 
-<div>
-<strong>الرقم المتسلسل:</strong>
-${invoice.number ?? invoice.invoice_number ?? "-"}
-</div>
-
+  <div>
+    <strong>رقم الفاتورة:</strong>
+    ${invoice.serial_number?.formatted ?? "-"}
+  </div>
 </div>
 
 </div>
@@ -233,12 +240,12 @@ ${invoice.number ?? invoice.invoice_number ?? "-"}
 
 <div class="info">
 <div class="label">تاريخ الإنشاء</div>
-<div class="value">${invoice.created_at ?? "-"}</div>
+<div class="value">${invoice.createdAt ?? "-"}}</div>
 </div>
 
 <div class="info">
 <div class="label">تاريخ الإصدار</div>
-<div class="value">${invoice.issue_date ?? "-"}</div>
+<div class="value">${new Date(invoice.issue_date).toLocaleDateString("ar-IQ")}</div>
 </div>
 
 <div class="info">
@@ -249,13 +256,13 @@ ${invoice.number ?? invoice.invoice_number ?? "-"}
 <div class="info">
 <div class="label">حالة الفاتورة</div>
 <div class="status">
-${invoice.status ?? "غير مدفوع"}
+${status}
 </div>
 </div>
 
 <div class="info">
 <div class="label">رمز العميل</div>
-<div class="value">${invoice.client_code ?? "-"}</div>
+<div class="value">${invoice.client_id ?? "-"}</div>
 </div>
 
 <div class="info">
@@ -306,7 +313,9 @@ ${invoice.items
 
 <td>${index + 1}</td>
 
-<td>${item.variant?.sku ?? "-"}</td>
+<td>${item.variant?.product_sku ??
+item.variant?.variant_sku ??
+"-"}</td>
 
 <td style="text-align:right;padding-right:15px;">
 ${item.variant?.product_name?.replace(/^\\*/, "") ?? ""}
@@ -343,7 +352,7 @@ ${item.variant?.product_name?.replace(/^\\*/, "") ?? ""}
 
 <td>قيمة الخصم</td>
 
-<td>${formatMoney(invoice.discount ?? 0)}</td>
+<td>${formatMoney(invoice.discount_amount ?? 0)}</td>
 
 </tr>
 
@@ -360,9 +369,7 @@ ${item.variant?.product_name?.replace(/^\\*/, "") ?? ""}
 </div>
 
 <div class="footer">
-
-Powered By Repzo
-
+تم إنشاء هذه الفاتورة إلكترونياً بواسطة نظام Repzo
 </div>
 
 </body>
