@@ -411,10 +411,6 @@ ${Object.values(invoice.taxes ?? {})
 
 </div>
 
-<div class="footer">
-تم إنشاء هذه الفاتورة إلكترونياً بواسطة نظام Repzo
-</div>
-
 </body>
 
 </html>
