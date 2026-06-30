@@ -81,7 +81,7 @@ const total = (
     //   return;
     // }
 
-    if (clientId) {
+    if (clientId && +data?.total>0) {
       await DeliveryLogger.info(
         delivery.id,
         `Fetching Repzo customer ${clientId}`
