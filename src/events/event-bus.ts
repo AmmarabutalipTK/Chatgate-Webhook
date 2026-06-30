@@ -122,7 +122,7 @@ if (+total < 0 && data?.status !== "consumed") {
   msg = "تحديث";
 }   
 
-  if(clientPhone==="966551753513") { 
+  if(clientName==="AmmarTakarub") { 
 
 
 
