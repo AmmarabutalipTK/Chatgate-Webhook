@@ -137,4 +137,16 @@ fastify.get(
     return PdfService.download(invoiceId, reply);
   }
 );
+
+fastify.get("/decode", async (request, reply) => {
+  const { value } = request.query as { value?: string };
+
+  return decodeURIComponent(value || "");
+});
+
+fastify.get("/encode", async (request, reply) => {
+  const { value } = request.query as { value?: string };
+
+  return encodeURIComponent(value || "");
+});
 }
