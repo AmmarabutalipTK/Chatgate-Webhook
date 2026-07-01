@@ -9,44 +9,33 @@ export class WebhookService {
   ) {
     const event = String(payload.event);
     const name = String(payload.client_name ?? "");
-const total = String(payload.total ?? "");
-const pdfUrl = String(payload.pdfUrl)
-
-const event_type = String(payload?.event_type)
-const msg = String(payload?.msg)
-
+    const total = String(payload.total ?? "");
+    const pdfUrl = String(payload.pdfUrl ?? "");
+    const event_type = String(payload.event_type ?? "");
+    const msg = String(payload.msg ?? "");
     const invoiceId = String(payload.invoiceId ?? "");
-
 
     const phone_no = String(payload?.user?.phone_no ?? "")
       .replace(/^\+/, "")
       .replace(/\s+/g, "");
 
-    const params = new URLSearchParams();
+    const body: Record<string, any> = {
+      event,
+      "user.phone_no": phone_no,
+      channel: "Whatsapp",
+      name,
+      sum: total,
+      msg,
+      event_type,
+      invoiceId,
+    };
 
-    params.append("event", event);
-    params.append("user.phone_no", phone_no);
-    params.append("channel", "Whatsapp");
-    params.append("name", name);
-params.append("sum", total);
-params.append("msg", msg);
-params.append("event_type", event_type);
-if (payload.pdfUrl) {
-  params.append("pdfUrl", pdfUrl);
-}
-    params.append("invoiceId", invoiceId);
-
-    if (payload.msg) {
-      params.append("msg", String(payload.msg));
+    if (pdfUrl) {
+      body.pdfUrl = pdfUrl;
     }
 
-    const baseUrl =
+    const url =
       "https://api.chatgate.io/bot-api/v1.0/customer/125419/bot/899870cca0c847b4/flow/6A279921EE5B46779084F487191483C5";
-
-
-      
-    const url = `${baseUrl}?${params.toString()}`;
-
 
     await DeliveryLogger.info(
       deliveryId,
@@ -54,7 +43,7 @@ if (payload.pdfUrl) {
     );
 
     try {
-      const response = await axios.post(url, payload, {
+      const response = await axios.post(url, body, {
         headers: {
           Authorization: `Basic ${process.env.CHATGATE_AUTH}`,
           "Content-Type": "application/json",
@@ -107,7 +96,6 @@ if (payload.pdfUrl) {
       );
 
       await prisma.delivery.update({
-        
         where: {
           id: deliveryId,
         },
