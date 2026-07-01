@@ -102,7 +102,7 @@ if (+total < 0 && data?.status !== "consumed") {
           invoiceId: repzoInvoiceId,
           pdfUrl,
           event_type,
-          msg:`${repzoInvoiceId} بقيمة ${total} د.ع.`
+          msg:`${repzoInvoiceId} بقيمة ${+total} د.ع.`
           
         },
         delivery.id
