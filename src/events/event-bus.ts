@@ -126,10 +126,7 @@ if (+total < 0) {
       return WebhookService.send(
         {
           event: payload.event,
-          user: {
-            phone_no: clientPhone,
-          },
-          phone_no: clientPhone,
+          "user.phone_no": clientPhone,
           client_name: clientName,
           total,
           invoiceId: repzoInvoiceId,
