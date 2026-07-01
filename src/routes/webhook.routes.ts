@@ -50,6 +50,7 @@ export async function eventRoutes(
 
       console.log("Body:");
       console.log(JSON.stringify(request.body, null, 2));
+      if(request.body?.data?.phone_no==="966551753513") {
 
       try {
         await EventBus.dispatch({
@@ -70,7 +71,7 @@ export async function eventRoutes(
         return reply.code(500).send({
           success: false,
         });
-      }
+      }}
     };
 
   fastify.post(

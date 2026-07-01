@@ -112,7 +112,7 @@ await prisma.delivery.update({
 
 let msg = "";
 
-if (+total < 0 && data?.status !== "consumed") {
+if (+total < 0) {
   msg = "إلغاء";
 } else if (data?.status === "consumed") {
   msg = "دفع";
@@ -120,11 +120,7 @@ if (+total < 0 && data?.status !== "consumed") {
   msg = "إنشاء";
 } else {
   msg = "تحديث";
-}   
-
-  if(clientName==="AmmarTakarub") { 
-
-
+}
 
 
       return WebhookService.send(
@@ -145,7 +141,7 @@ if (+total < 0 && data?.status !== "consumed") {
         delivery.id
       );
     }
-      } 
+
     return WebhookService.send(payload, delivery.id);
   }
 }
