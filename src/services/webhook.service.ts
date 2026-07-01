@@ -15,9 +15,7 @@ export class WebhookService {
     const msg = String(payload.msg ?? "");
     const invoiceId = String(payload.invoiceId ?? "");
 
-    const phone_no = String(payload?.phone_no ?? "")
-      .replace(/^\+/, "")
-      .replace(/\s+/g, "");
+    const phone_no = Number(payload?.phone_no??0)
 
     const body: Record<string, any> = {
       event,
@@ -62,6 +60,7 @@ export class WebhookService {
           id: deliveryId,
         },
         data: {
+          //@ts-ignore
           phoneNo: phone_no,
           success: true,
           statusCode: response.status,
@@ -102,6 +101,7 @@ export class WebhookService {
           id: deliveryId,
         },
         data: {
+          //@ts-ignore
           phoneNo: phone_no,
           success: false,
           statusCode,
