@@ -24,8 +24,8 @@ export class EventBus {
     const data = payload?.data;
     const clientId = data?.client_id;
     const repzoInvoiceId = data?.serial_number?.formatted;
-const total = (
-  Number(String(data.total??data.amount).replace(/,/g, "")) / 1000
+const total = Math.abs(
+  Number(String(data.total ?? data.amount).replace(/,/g, "")) / 1000
 ).toLocaleString("en-US");
 // "391,000"
     // Create delivery FIRST
@@ -102,7 +102,7 @@ if (+total < 0 && data?.status !== "consumed") {
           invoiceId: repzoInvoiceId,
           pdfUrl,
           event_type,
-          msg:`${repzoInvoiceId} بقيمة ${+total} د.ع.`
+          msg:`${repzoInvoiceId} بقيمة ${total} د.ع.`
           
         },
         delivery.id
