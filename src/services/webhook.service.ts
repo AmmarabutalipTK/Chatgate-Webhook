@@ -22,9 +22,6 @@ export class WebhookService {
     const body: Record<string, any> = {
       event,
       "user.phone_no": phone_no,
-      user: {
-        phone_no
-      },
       channel: "Whatsapp",
       name,
       sum: total,
@@ -32,6 +29,8 @@ export class WebhookService {
       event_type,
       invoiceId,
     };
+
+    console.log({body})
 
     if (pdfUrl) {
       body.pdfUrl = pdfUrl;

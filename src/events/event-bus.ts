@@ -50,36 +50,6 @@ const total = (
       "Checking for duplicate invoice"
     );
 
-    // const alreadySent = await prisma.delivery.findFirst({
-    //   where: {
-    //     id: {
-    //       not: delivery.id,
-    //     },
-    //     event: payload.event,
-    //     success: true,
-    //     invoiceId: repzoInvoiceId,
-    //   },
-    // });
-
-    // if (alreadySent) {
-    //   await DeliveryLogger.warning(
-    //     delivery.id,
-    //     `Duplicate invoice ${repzoInvoiceId} detected`
-    //   );
-
-      // await prisma.delivery.update({
-      //   where: {
-      //     id: delivery.id,
-      //   },
-      //   data: {
-      //     success: false,
-      //     statusCode: 409,
-      //     responseBody: "Duplicate invoice",
-      //   },
-      // });
-
-    //   return;
-    // }
 
     if (clientId) {
       
