@@ -48,9 +48,11 @@ export async function eventRoutes(
         clientId: request.body?.data?.client_id,
       });
 
-      console.log("Body:");
-      console.log(JSON.stringify(request.body, null, 2));
+
       if((request.body?.data?.client_id)==="6a43c1940d94612bf1b464a6") {
+
+              console.log("Body:");
+      console.log(JSON.stringify(request.body, null, 2));
 
       try {
         await EventBus.dispatch({
