@@ -82,14 +82,14 @@ await prisma.delivery.update({
 
 let event_type = "";
 
-if (+total < 0 && data?.status !== "consumed") {
+if (+total < 0) {
   event_type = "إلغاء";
 } else if (data?.status === "consumed") {
   event_type = "دفع";
 } else if (data?.status === "unpaid") {
-  event_type = "إنشاء";
+  event_type = "قطع";
 } else {
-  event_type = "تحديث";
+  event_type = "إلغاء";
 }
 
 
