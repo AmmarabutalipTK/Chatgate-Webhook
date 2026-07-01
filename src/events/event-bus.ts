@@ -80,16 +80,16 @@ await prisma.delivery.update({
   },
 });
 
-let msg = "";
+let event_type = "";
 
 if (+total < 0 && data?.status !== "consumed") {
-  msg = "إلغاء";
+  event_type = "إلغاء";
 } else if (data?.status === "consumed") {
-  msg = "دفع";
+  event_type = "دفع";
 } else if (data?.status === "unpaid") {
-  msg = "إنشاء";
+  event_type = "إنشاء";
 } else {
-  msg = "تحديث";
+  event_type = "تحديث";
 }
 
 
@@ -101,7 +101,7 @@ if (+total < 0 && data?.status !== "consumed") {
           total,
           invoiceId: repzoInvoiceId,
           pdfUrl,
-          event_type: +data?.total>0?"قطع":"الغاء",
+          event_type,
           msg:`${repzoInvoiceId} بقيمة ${total} د.ع.`
           
         },
