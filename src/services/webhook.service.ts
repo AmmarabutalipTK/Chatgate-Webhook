@@ -18,21 +18,21 @@ export class WebhookService {
     const phone_no = String(payload?.phone_no ?? "")
 
     const body: Record<string, any> = {
-      event,
-      "user.phone_no": phone_no,
-      channel: "Whatsapp",
-      name,
-      sum: total,
-      msg,
-      event_type,
-      invoiceId,
-    };
+  "event": "invoice.created",
+  "user.channel": "whatsapp",
+  "user.phone_no": "966551753513",
+  "sum": "142,200",
+  "msg": "INV-1020-306 بقيمة 142,200 د.ع.",
+  "name5": "عبدالرزاق",
+  "event_type": "قطع",
+  "pdfUrl": "https://webhooks.chatgate.takarubdev.com/invoice/INV-1020-306.pdf",
+  "invoiceId": "INV-1020-306"
+}
 
-    console.log({body})
 
-    if (pdfUrl) {
-      body.pdfUrl = pdfUrl;
-    }
+    // if (pdfUrl) {
+    //   body.pdfUrl = pdfUrl;
+    // }
 
     const url =
       "https://api.chatgate.io/bot-api/v2.0/customer/125419/bot/899870cca0c847b4/flow/6A279921EE5B46779084F487191483C5";
