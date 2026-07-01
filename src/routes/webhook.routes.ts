@@ -71,7 +71,13 @@ export async function eventRoutes(
         return reply.code(500).send({
           success: false,
         });
-      }}
+      }} else {
+
+        return reply.code(200).send({
+          success: true,
+          message: "Webhook ignored for this client",
+        });
+      }
     };
 
   fastify.post(
