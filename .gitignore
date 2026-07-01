@@ -10,7 +10,7 @@ generated/prisma/
 
 # Optional: Prisma generated folder if using a custom output
 prisma/generated/
-
+prisma/dev.db
 # SQLite database
 dev.db
 dev.db-journal
