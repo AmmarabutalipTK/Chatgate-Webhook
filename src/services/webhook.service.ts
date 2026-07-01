@@ -15,7 +15,7 @@ export class WebhookService {
     const msg = String(payload.msg ?? "");
     const invoiceId = String(payload.invoiceId ?? "");
 
-    const phone_no = Number(payload?.phone_no??0)
+    const phone_no = String(payload?.phone_no ?? "")
 
     const body: Record<string, any> = {
       event,
@@ -35,7 +35,7 @@ export class WebhookService {
     }
 
     const url =
-      "https://api.chatgate.io/bot-api/v1.0/customer/125419/bot/899870cca0c847b4/flow/6A279921EE5B46779084F487191483C5";
+      "https://api.chatgate.io/bot-api/v2.0/customer/125419/bot/899870cca0c847b4/flow/6A279921EE5B46779084F487191483C5";
 
     await DeliveryLogger.info(
       deliveryId,
@@ -60,7 +60,6 @@ export class WebhookService {
           id: deliveryId,
         },
         data: {
-          //@ts-ignore
           phoneNo: phone_no,
           success: true,
           statusCode: response.status,
@@ -101,7 +100,6 @@ export class WebhookService {
           id: deliveryId,
         },
         data: {
-          //@ts-ignore
           phoneNo: phone_no,
           success: false,
           statusCode,

@@ -45,11 +45,11 @@ export async function eventRoutes(
         time: new Date().toISOString(),
         event,
         invoiceId: request.body?._id,
-        clientId: request.body?.client_id,
+        clientId: request.body?.data?.client_id,
       });
 
 
-      if(request.body?.client_id==="6a43c1940d94612bf1b464a6") {
+      if((request.body?.client_id)==="6a43c1940d94612bf1b464a6") {
 
               console.log("Body:");
       console.log(JSON.stringify(request.body, null, 2));
@@ -137,16 +137,4 @@ fastify.get(
     return PdfService.download(invoiceId, reply);
   }
 );
-
-fastify.get("/decode", async (request, reply) => {
-  const { value } = request.query as { value?: string };
-
-  return decodeURIComponent(value || "");
-});
-
-fastify.get("/encode", async (request, reply) => {
-  const { value } = request.query as { value?: string };
-
-  return encodeURIComponent(value || "");
-});
 }
