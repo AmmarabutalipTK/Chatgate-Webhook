@@ -45,12 +45,12 @@ export async function eventRoutes(
         time: new Date().toISOString(),
         event,
         invoiceId: request.body?._id,
-        clientId: request.body?.client_id,
+        clientId: request.body?.data?.client_id,
       });
 
       console.log("Body:");
       console.log(JSON.stringify(request.body, null, 2));
-      if(request.body?.data?.phone_no==="966551753513") {
+      if((request.body?.data?.client_id)==="6a43c1940d94612bf1b464a6") {
 
       try {
         await EventBus.dispatch({
