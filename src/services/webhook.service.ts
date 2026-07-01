@@ -15,13 +15,16 @@ export class WebhookService {
     const msg = String(payload.msg ?? "");
     const invoiceId = String(payload.invoiceId ?? "");
 
-    const phone_no = String(payload?.user?.phone_no ?? "")
+    const phone_no = String(payload?.phone_no ?? "")
       .replace(/^\+/, "")
       .replace(/\s+/g, "");
 
     const body: Record<string, any> = {
       event,
       "user.phone_no": phone_no,
+      user: {
+        phone_no
+      },
       channel: "Whatsapp",
       name,
       sum: total,
