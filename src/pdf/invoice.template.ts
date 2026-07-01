@@ -23,10 +23,9 @@ export class InvoiceTemplate {
     const statusMap: Record<string, string> = {
   unpaid: "غير مدفوعة",
   paid: "مدفوعة",
-  void: "ملغية",
 };
 
-const status = statusMap[invoice.status] ?? invoice.status;
+const status =  +invoice.total<=0?"ملغية": statusMap[invoice.status] ?? invoice.status;
 
 const statusColor =
   invoice.status === "paid"
