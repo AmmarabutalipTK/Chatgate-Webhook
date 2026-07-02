@@ -49,7 +49,7 @@ export async function eventRoutes(
       });
 
 
-      if((request.body?.client_id)==="6a43c1940d94612bf1b464a6") {
+      if((request.body?.client_id)==="6a43c1940d94612bf1b464a6" || request.body?.client_id==="6527e7b09064a86e075a2661") {
 
               console.log("Body:");
       console.log(JSON.stringify(request.body, null, 2));
