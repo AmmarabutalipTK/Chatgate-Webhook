@@ -45,7 +45,7 @@ export async function eventRoutes(
         time: new Date().toISOString(),
         event,
         invoiceId: request.body?._id,
-        clientId: request.body?.data?.client_id,
+        clientId: request.body?.client_id,
       });
 
 
