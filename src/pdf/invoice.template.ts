@@ -221,7 +221,7 @@ font-size:12px;
 
 </div>
 
-<div class="top-row">س
+<div class="top-row">
 
 <div class="company">
 
