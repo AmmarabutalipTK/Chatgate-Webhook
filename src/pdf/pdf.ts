@@ -24,6 +24,11 @@ export class PdfService {
 
     const payload = JSON.parse(delivery.requestBody);
 
+    // Support both payload shapes:
+    // { data: invoice }
+    // invoice
+    const invoice = payload?.data ?? payload;
+
     const browser = await puppeteer.launch({
       executablePath: "/usr/bin/chromium-browser",
       headless: true,
@@ -46,7 +51,7 @@ export class PdfService {
       });
 
       await page.setContent(
-        InvoiceTemplate.render(payload.data),
+        InvoiceTemplate.render(invoice),
         {
           waitUntil: "load",
         }
@@ -78,7 +83,6 @@ export class PdfService {
           )}`
         )
         .header("Content-Length", pdf.length)
-        .header("Content-Type", "application/pdf")
         .header("X-Content-Type-Options", "nosniff")
         .send(pdf);
     } finally {

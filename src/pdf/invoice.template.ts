@@ -16,7 +16,7 @@ const formatDate = (date?: string) =>
     : "-";
 
 export class InvoiceTemplate {
-  static render(invoice: any) {
+  static render(invoice: any = {}) {
  const formatMoney = (value: number = 0) =>
   `${(Number(value) / 1000).toLocaleString("en-US")} IQD`;
 
@@ -280,7 +280,7 @@ ${status}
 <div class="info">
 <div class="label">رمز العميل</div>
 <div class="value">
-${invoice.client_id?.slice(-6) ?? "-"}
+${String(invoice.client_id ?? "-").slice(-6)}
 </div>
 </div>
 
@@ -348,22 +348,27 @@ ${invoice.delivered_status === "delivered"
 
 <tbody>
 
-${invoice.items
+${(invoice.items ?? [])
   .map(
     (item: any, index: number) => `
 <tr>
-
 <td>${index + 1}</td>
 
-<td>${item.variant?.product_sku ??
-item.variant?.variant_sku ??
-"-"}</td>
+<td>${
+  item.variant?.product_sku ??
+  item.variant?.variant_sku ??
+  "-"
+}</td>
 
 <td style="text-align:right;padding-right:15px;">
-${item.variant?.product_name?.replace(/^\*+/, "").trim() ?? ""}
+${
+  item.variant?.product_name
+    ?.replace(/^\*+/, "")
+    .trim() ?? ""
+}
 </td>
 
-<td>${item.qty}</td>
+<td>${item.qty ?? "-"}</td>
 
 <td>${formatMoney(item.price)}</td>
 
