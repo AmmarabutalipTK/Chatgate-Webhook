@@ -53,6 +53,8 @@ const handleEvent =
     const clientId = String(request.body?.client_id ?? "").trim();
     const companyName = String(request.query?.company_name ?? "").trim();
 
+    console.log(`companyName ${companyName}`);
+
     console.log({
       time: new Date().toISOString(),
       event,
@@ -66,7 +68,7 @@ const handleEvent =
     console.log(JSON.stringify(request.body, null, 2));
 
     if (!allowedClients.has(clientId)) {
-      console.log(`Ignoring webhook from client: ${clientId}`);
+      console.log(`Ignoring webhook from client: ${clientId} company ${companyName}`);
 
       return reply.code(200).send({
         success: true,
