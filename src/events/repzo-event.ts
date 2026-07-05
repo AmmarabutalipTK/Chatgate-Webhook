@@ -12,7 +12,7 @@ export class RepzoEvent {
 
     const client = await this.getClient(data.client_id);
 
-    const companyName = data.companyName;
+    const companyName = payload.companyName;
     const invoiceId = data.serial_number.formatted;
 
     const total = this.formatTotal(data);
