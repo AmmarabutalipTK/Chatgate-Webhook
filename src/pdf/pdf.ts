@@ -76,10 +76,12 @@ export class PdfService {
       return reply
         .code(200)
         .type("application/pdf")
-.header(
-  "Content-Disposition",
-  `inline; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`
-)
+        .header(
+          "Content-Disposition",
+          `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(
+            fileName
+          )}`
+        )
         .header("Content-Length", pdf.length)
         .header("X-Content-Type-Options", "nosniff")
         
