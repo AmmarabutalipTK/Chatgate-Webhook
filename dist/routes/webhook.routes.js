@@ -55,13 +55,13 @@ async function eventRoutes(fastify) {
         });
         console.log("Body:");
         console.log(JSON.stringify(request.body, null, 2));
-        if (!allowedClients.has(clientId)) {
-            console.log(`Ignoring webhook from client: ${clientId} company ${companyName}`);
-            return reply.code(200).send({
-                success: true,
-                message: "dd ignored for this client" + companyName,
-            });
-        }
+        // if (!allowedClients.has(clientId)) {
+        //     console.log(`Ignoring webhook from client: ${clientId} company ${companyName}`);
+        //     return reply.code(200).send({
+        //         success: true,
+        //         message: "dd ignored for this client" + companyName,
+        //     });
+        // }
         try {
             await event_bus_1.EventBus.dispatch({
                 event,
