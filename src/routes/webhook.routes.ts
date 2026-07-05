@@ -72,7 +72,7 @@ const handleEvent =
 
       return reply.code(200).send({
         success: true,
-        message: "dd ignored for this client" + companyName,
+        message: "Webhook ignored for this client" + companyName,
       });
     }
 
