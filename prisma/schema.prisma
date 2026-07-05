@@ -10,6 +10,8 @@ datasource db {
 model Delivery {
   id           String   @id @default(cuid())
 
+  companyName  String?
+
   event        String
   invoiceId    String?
 
@@ -31,7 +33,6 @@ model Delivery {
   @@index([clientId])
   @@index([phoneNo, createdAt])
 }
-
 model DeliveryLog {
   id          String   @id @default(cuid())
 

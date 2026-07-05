@@ -41,56 +41,58 @@ export async function eventRoutes(
     });
   });
 
-  const handleEvent =
-    (event: string) =>
-    async (request: any, reply: any) => {
-      console.log("=========== WEBHOOK RECEIVED ===========");
+const handleEvent =
+  (event: string) =>
+  async (request: any, reply: any) => {
+    console.log("=========== WEBHOOK RECEIVED ===========");
 
-      const clientId = String(request.body?.client_id ?? "").trim();
+    const clientId = String(request.body?.client_id ?? "").trim();
+    const companyName = String(request.query?.company_name ?? "").trim();
 
-      console.log({
-        time: new Date().toISOString(),
+    console.log({
+      time: new Date().toISOString(),
+      event,
+      invoiceId: request.body?._id,
+      clientId,
+      companyName,
+      allowed: allowedClients.has(clientId),
+    });
+
+    console.log("Body:");
+    console.log(JSON.stringify(request.body, null, 2));
+
+    if (!allowedClients.has(clientId)) {
+      console.log(`Ignoring webhook from client: ${clientId}`);
+
+      return reply.code(200).send({
+        success: true,
+        message: "Webhook ignored for this client",
+      });
+    }
+
+    try {
+      await EventBus.dispatch({
         event,
-        invoiceId: request.body?._id,
-        clientId,
-        allowed: allowedClients.has(clientId),
+        Channel: "Whatsapp",
+        companyName, // <-- pass it here
+        data: request.body,
       });
 
-      console.log("Body:");
-      console.log(JSON.stringify(request.body, null, 2));
+      console.log("Webhook processed successfully");
 
-      if (!allowedClients.has(clientId)) {
-        console.log(`Ignoring webhook from client: ${clientId}`);
+      return reply.code(200).send({
+        success: true,
+      });
+    } catch (error) {
+      console.error("Webhook processing failed");
+      console.error(error);
 
-        return reply.code(200).send({
-          success: true,
-          message: "Webhook ignored for this client",
-        });
-      }
-
-      try {
-        await EventBus.dispatch({
-          event,
-          Channel: "Whatsapp",
-          data: request.body,
-        });
-
-        console.log("Webhook processed successfully");
-
-        return reply.code(200).send({
-          success: true,
-        });
-      } catch (error) {
-        console.error("Webhook processing failed");
-        console.error(error);
-
-        return reply.code(500).send({
-          success: false,
-          error:
-            error instanceof Error ? error.message : "Unknown error",
-        });
-      }
-    };
+      return reply.code(500).send({
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
 
   fastify.post(
     "/events/client-created",

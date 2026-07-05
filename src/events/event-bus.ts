@@ -7,6 +7,7 @@ export class EventBus {
   static async dispatch(payload: Record<string, any>) {
     const delivery = await prisma.delivery.create({
       data: {
+        companyName: payload.companyName,
         event: payload.event,
         invoiceId: payload.data?.serial_number?.formatted,
         requestBody: JSON.stringify(payload),

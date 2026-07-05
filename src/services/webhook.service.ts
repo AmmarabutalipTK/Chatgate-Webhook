@@ -14,6 +14,7 @@ export class WebhookService {
     const event_type = String(payload.event_type ?? "");
     const msg = String(payload.msg ?? "");
     const invoiceId = String(payload.invoiceId ?? "");
+    const companyName = String(payload.companyName ?? "");
 
 const phone_no = String(payload?.phone_no ?? "").replace(/^\+/, "");
 
@@ -27,6 +28,7 @@ const body: Record<string, any> = {
   event_type,
   pdfUrl,
   invoiceId,
+  companyName
 };
 
     // if (pdfUrl) {
