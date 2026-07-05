@@ -12,6 +12,7 @@ export class RepzoEvent {
 
     const client = await this.getClient(data.client_id);
 
+    const companyName = data.companyName;
     const invoiceId = data.serial_number.formatted;
 
     const total = this.formatTotal(data);
@@ -41,6 +42,7 @@ export class RepzoEvent {
         invoiceId,
         pdfUrl,
         event_type: this.getEventType(data.status),
+        companyName,
         msg: `${invoiceId} بقيمة ${total} د.ع.`,
       },
       deliveryId

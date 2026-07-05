@@ -53,8 +53,6 @@ const handleEvent =
     const clientId = String(request.body?.client_id ?? "").trim();
     const companyName = String(request.query?.company_name ?? "").trim();
 
-    console.log(`companyName ${companyName}`);
-
     console.log({
       time: new Date().toISOString(),
       event,
@@ -80,7 +78,7 @@ const handleEvent =
       await EventBus.dispatch({
         event,
         Channel: "Whatsapp",
-        companyName, // <-- pass it here
+        companyName, 
         data: request.body,
       });
 
