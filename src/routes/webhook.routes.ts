@@ -4,6 +4,10 @@ import { EventType } from "../events/event-types";
 import { prisma } from "../prisma";
 import { PdfService } from "../pdf/pdf";
 
+const allowedClients = new Set([
+  "6a43c1940d94612bf1b464a6",
+  "6527e7b09064a86e075a2661",
+]);
 
 export async function eventRoutes(
   fastify: FastifyInstance
@@ -41,18 +45,28 @@ export async function eventRoutes(
     (event: string) =>
     async (request: any, reply: any) => {
       console.log("=========== WEBHOOK RECEIVED ===========");
+
+      const clientId = String(request.body?.client_id ?? "").trim();
+
       console.log({
         time: new Date().toISOString(),
         event,
         invoiceId: request.body?._id,
-        clientId: request.body?.client_id,
+        clientId,
+        allowed: allowedClients.has(clientId),
       });
 
-
-      if((request.body?.client_id)==="6a43c1940d94612bf1b464a6" || request.body?.client_id==="6527e7b09064a86e075a2661") {
-
-              console.log("Body:");
+      console.log("Body:");
       console.log(JSON.stringify(request.body, null, 2));
+
+      if (!allowedClients.has(clientId)) {
+        console.log(`Ignoring webhook from client: ${clientId}`);
+
+        return reply.code(200).send({
+          success: true,
+          message: "Webhook ignored for this client",
+        });
+      }
 
       try {
         await EventBus.dispatch({
@@ -72,12 +86,8 @@ export async function eventRoutes(
 
         return reply.code(500).send({
           success: false,
-        });
-      }} else {
-
-        return reply.code(200).send({
-          success: true,
-          message: "Webhook ignored for this client",
+          error:
+            error instanceof Error ? error.message : "Unknown error",
         });
       }
     };
@@ -127,14 +137,14 @@ export async function eventRoutes(
     handleEvent(EventType.WORKORDER_CREATED)
   );
 
-fastify.get(
-  "/invoice/:invoiceId.pdf",
-  async (request, reply) => {
-    const { invoiceId } = request.params as {
-      invoiceId: string;
-    };
+  fastify.get(
+    "/invoice/:invoiceId.pdf",
+    async (request, reply) => {
+      const { invoiceId } = request.params as {
+        invoiceId: string;
+      };
 
-    return PdfService.download(invoiceId, reply);
-  }
-);
+      return PdfService.download(invoiceId, reply);
+    }
+  );
 }
