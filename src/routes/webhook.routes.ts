@@ -7,6 +7,7 @@ import { PdfService } from "../pdf/pdf";
 const allowedClients = new Set([
   "6a43c1940d94612bf1b464a6",
   "6527e7b09064a86e075a2661",
+  "6395b4027429b1592858f00f"
 ]);
 
 export async function eventRoutes(
