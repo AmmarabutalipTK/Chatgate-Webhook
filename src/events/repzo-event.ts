@@ -36,7 +36,7 @@ export class RepzoEvent {
 
 const token = config.token;
 
-    const client = await this.getClient(data.client_id, REPZO_CONFIG[payload.companyName]?.token ?? process.env.REPZO_TOKEN!);
+    const client = await this.getClient(data.client_id, token ?? process.env.REPZO_TOKEN!);
 
     const invoiceId = data.serial_number.formatted;
 
