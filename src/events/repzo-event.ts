@@ -3,6 +3,25 @@ import { WebhookService } from "../services/webhook.service";
 import { DeliveryLogger } from "../logger/logger";
 import axios from "axios";
 
+
+const REPZO_CONFIG: Record<string, { token: string }> = {
+  fusteka: {
+    token: process.env.REPZO_FUSTEKA_TOKEN!,
+  },
+  fustekacream: {
+    token: process.env.REPZO_FUSTEKACREAM_TOKEN!,
+  },
+  frenchfries: {
+    token: process.env.REPZO_FRENCHFRIES_TOKEN!,
+  },
+  fustekaola: {
+    token: process.env.REPZO_FUSTEKAOLA_TOKEN!,
+  },
+  rasan: {
+    token: process.env.REPZO_RASAN_TOKEN!,
+  },
+};
+
 export class RepzoEvent {
   static async handle(
     payload: Record<string, any>,
@@ -10,7 +29,7 @@ export class RepzoEvent {
   ) {
     const data = payload.data;
 
-    const client = await this.getClient(data.client_id);
+    const client = await this.getClient(data.client_id, REPZO_CONFIG[payload.companyName]?.token ?? process.env.REPZO_TOKEN!);
 
     const companyName = payload.companyName;
     const invoiceId = data.serial_number.formatted;
@@ -49,13 +68,15 @@ export class RepzoEvent {
     );
   }
 
-  private static async getClient(clientId: string) {
+  
+
+  private static async getClient(clientId: string,token:string) {
     const { data } = await axios.get(
       `https://sv.api.repzo.me/client/${clientId}`,
       {
         headers: {
-          Authorization: `Bearer ${process.env.REPZO_TOKEN}`,
-          "api-key": process.env.REPZO_TOKEN,
+          Authorization: `Bearer ${token}`,
+          "api-key":token,
           Accept: "application/json",
           "Content-Type": "application/json",
         },
