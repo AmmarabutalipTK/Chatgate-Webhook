@@ -4,14 +4,14 @@ import { EventType } from "../events/event-types";
 import { prisma } from "../prisma";
 import { PdfService } from "../pdf/pdf";
 
-const allowedClients = new Set([
-  "6a43c1940d94612bf1b464a6",
-  "6527e7b09064a86e075a2661",
-  "6395b4027429b1592858f00f",
-  '6533789858d41682e6f32536'
-  ,"62f91470b27d1993f1a9ea6d",
-  "69689c02779aaf242a58a771"
-]);
+// const allowedClients = new Set([
+//   "6a43c1940d94612bf1b464a6",
+//   "6527e7b09064a86e075a2661",
+//   "6395b4027429b1592858f00f",
+//   '6533789858d41682e6f32536'
+//   ,"62f91470b27d1993f1a9ea6d",
+//   "69689c02779aaf242a58a771"
+// ]);
 
 export async function eventRoutes(
   fastify: FastifyInstance
@@ -59,7 +59,6 @@ const handleEvent =
       invoiceId: request.body?._id,
       clientId,
       companyName,
-      allowed: allowedClients.has(clientId),
     });
 
     console.log("Body:");

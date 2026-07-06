@@ -16,7 +16,7 @@ export class WebhookService {
     const invoiceId = String(payload.invoiceId ?? "");
     const companyName = String(payload.companyName ?? "");
 
-const phone_no = String(payload?.phone_no ?? "").replace(/^\+/, "");
+const phone_no = String(payload?.phone_no).replace(/\D/g, "");
 
 const body: Record<string, any> = {
   event,
