@@ -8,10 +8,30 @@ const prisma_1 = require("../prisma");
 const webhook_service_1 = require("../services/webhook.service");
 const logger_1 = require("../logger/logger");
 const axios_1 = __importDefault(require("axios"));
+const REPZO_CONFIG = {
+    fusteka: {
+        token: process.env.REPZO_FUSTEKA_TOKEN,
+    },
+    fustekacream: {
+        token: process.env.REPZO_FUSTEKACREAM_TOKEN,
+    },
+    frenchfries: {
+        token: process.env.REPZO_FRENCHFRIES_TOKEN,
+    },
+    fustekaola: {
+        token: process.env.REPZO_FUSTEKAOLA_TOKEN,
+    },
+    rasan: {
+        token: process.env.REPZO_RASAN_TOKEN,
+    },
+};
 class RepzoEvent {
     static async handle(payload, deliveryId) {
+        const companyName = payload.companyName;
         const data = payload.data;
-        const client = await this.getClient(data.client_id);
+        const config = REPZO_CONFIG[companyName];
+        const token = config.token;
+        const client = await this.getClient(data.client_id, token ?? process.env.REPZO_TOKEN);
         const invoiceId = data.serial_number.formatted;
         const total = this.formatTotal(data);
         const pdfUrl = `${process.env.BASE_URL}/invoice/${invoiceId}.pdf`;
@@ -32,14 +52,15 @@ class RepzoEvent {
             invoiceId,
             pdfUrl,
             event_type: this.getEventType(data.status),
+            companyName,
             msg: `${invoiceId} بقيمة ${total} د.ع.`,
         }, deliveryId);
     }
-    static async getClient(clientId) {
+    static async getClient(clientId, token) {
         const { data } = await axios_1.default.get(`https://sv.api.repzo.me/client/${clientId}`, {
             headers: {
-                Authorization: `Bearer ${process.env.REPZO_TOKEN}`,
-                "api-key": process.env.REPZO_TOKEN,
+                Authorization: `Bearer ${token}`,
+                "api-key": token,
                 Accept: "application/json",
                 "Content-Type": "application/json",
             },

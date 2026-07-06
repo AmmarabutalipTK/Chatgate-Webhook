@@ -65,14 +65,14 @@ const handleEvent =
     console.log("Body:");
     console.log(JSON.stringify(request.body, null, 2));
 
-    if (!allowedClients.has(clientId)) {
-      console.log(`Ignoring webhook from client: ${clientId} company ${companyName}`);
+    // if (!allowedClients.has(clientId)) {
+    //   console.log(`Ignoring webhook from client: ${clientId} company ${companyName}`);
 
-      return reply.code(200).send({
-        success: true,
-        message: "Webhook ignored for this client" + companyName,
-      });
-    }
+    //   return reply.code(200).send({
+    //     success: true,
+    //     message: "Webhook ignored for this client" + companyName,
+    //   });
+    // }
 
     try {
       await EventBus.dispatch({
