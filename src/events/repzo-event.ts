@@ -27,11 +27,17 @@ export class RepzoEvent {
     payload: Record<string, any>,
     deliveryId: string
   ) {
+    const companyName = payload.companyName;
+
     const data = payload.data;
+
+    const config = REPZO_CONFIG[companyName];
+
+
+const token = config.token;
 
     const client = await this.getClient(data.client_id, REPZO_CONFIG[payload.companyName]?.token ?? process.env.REPZO_TOKEN!);
 
-    const companyName = payload.companyName;
     const invoiceId = data.serial_number.formatted;
 
     const total = this.formatTotal(data);
