@@ -3,7 +3,6 @@ import { WebhookService } from "../services/webhook.service";
 import { DeliveryLogger } from "../logger/logger";
 import axios from "axios";
 
-
 const REPZO_CONFIG: Record<string, { token: string }> = {
   fusteka: {
     token: process.env.REPZO_FUSTEKA_TOKEN!,
@@ -28,15 +27,25 @@ export class RepzoEvent {
     deliveryId: string
   ) {
     const companyName = payload.companyName;
-
     const data = payload.data;
 
     const config = REPZO_CONFIG[companyName];
 
+    if (!config?.token) {
+      await DeliveryLogger.info(
+        deliveryId,
+        `No Repzo token configured for company: ${companyName}`
+      );
 
-const token = config.token;
+      return;
+    }
 
-    const client = await this.getClient(data.client_id, token ?? process.env.REPZO_TOKEN!);
+    const token = config.token;
+
+    const client = await this.getClient(
+      data.client_id,
+      token ?? process.env.REPZO_TOKEN!
+    );
 
     const invoiceId = data.serial_number.formatted;
 
@@ -44,24 +53,39 @@ const token = config.token;
 
     const pdfUrl = `${process.env.BASE_URL}/invoice/${invoiceId}.pdf`;
 
+    // Use phone first, then fall back to cell_phone
+    const phone = client.phone ?? client.cell_phone ?? "";
+
     await prisma.delivery.update({
       where: { id: deliveryId },
       data: {
         clientId: data.client_id,
         clientName: client.name,
-        phoneNo: client.phone,
+        phoneNo: phone || null,
       },
     });
 
     await DeliveryLogger.success(
       deliveryId,
-      `Customer loaded: ${client.name}`
+      `Customer loaded: ${client.name}${
+        phone ? ` - phone: ${phone}` : " - no phone"
+      }`
     );
+
+    // Don't send an invalid WhatsApp request
+    if (!phone) {
+      await DeliveryLogger.info(
+        deliveryId,
+        `Skipping ChatGate: Repzo client ${data.client_id} has no phone or cell_phone`
+      );
+
+      return;
+    }
 
     return WebhookService.send(
       {
         event: payload.event,
-        phone_no: client.phone,
+        phone_no: phone,
         client_name: client.name,
         total,
         invoiceId,
@@ -74,15 +98,16 @@ const token = config.token;
     );
   }
 
-  
-
-  private static async getClient(clientId: string,token:string) {
+  private static async getClient(
+    clientId: string,
+    token: string
+  ) {
     const { data } = await axios.get(
       `https://sv.api.repzo.me/client/${clientId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
-          "api-key":token,
+          "api-key": token,
           Accept: "application/json",
           "Content-Type": "application/json",
         },
@@ -104,8 +129,10 @@ const token = config.token;
     switch (status) {
       case "consumed":
         return "دفع";
+
       case "unpaid":
         return "قطع";
+
       default:
         return "إلغاء";
     }
