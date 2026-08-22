@@ -13,6 +13,9 @@ export class PdfService {
       where: {
         invoiceId,
       },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
 
     if (!delivery) {
@@ -22,12 +25,45 @@ export class PdfService {
       });
     }
 
-    const payload = JSON.parse(delivery.requestBody);
+    let payload: any;
+
+    try {
+      payload = JSON.parse(delivery.requestBody);
+    } catch (error) {
+      console.error(
+        "Failed to parse invoice requestBody:",
+        error
+      );
+
+      return reply.code(500).send({
+        success: false,
+        message: "Invalid invoice data",
+      });
+    }
 
     // Support both payload shapes:
     // { data: invoice }
     // invoice
     const invoice = payload?.data ?? payload;
+
+    if (!invoice || typeof invoice !== "object") {
+      return reply.code(500).send({
+        success: false,
+        message: "Invalid invoice payload",
+      });
+    }
+
+    console.log("Generating PDF:", {
+      invoiceId,
+      status: invoice.status,
+      isVoid: invoice.is_void,
+      items: Array.isArray(invoice.items)
+        ? invoice.items.length
+        : 0,
+      returnItems: Array.isArray(invoice.return_items)
+        ? invoice.return_items.length
+        : 0,
+    });
 
     const browser = await puppeteer.launch({
       executablePath: "/usr/bin/chromium-browser",
@@ -84,7 +120,6 @@ export class PdfService {
         )
         .header("Content-Length", pdf.length)
         .header("X-Content-Type-Options", "nosniff")
-        
         .send(pdf);
     } finally {
       await browser.close();

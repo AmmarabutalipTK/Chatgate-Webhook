@@ -19,35 +19,61 @@ const formatDate = (date?: string) =>
 export class InvoiceTemplate {
   static render(invoice: any = {}) {
     const formatMoney = (value: number = 0) =>
-      `${Math.abs(Number(value) / 1000).toLocaleString("en-US")} IQD`;
+      `${Math.abs(
+        Number(value) / 1000
+      ).toLocaleString("en-US")} IQD`;
 
     const statusMap: Record<string, string> = {
       unpaid: "غير مدفوعة",
       paid: "مدفوعة",
     };
 
+    /*
+     * Repzo:
+     *
+     * Normal invoice:
+     *   items: [...]
+     *   return_items: []
+     *
+     * Void / return invoice:
+     *   items: []
+     *   return_items: [...]
+     *
+     * Example:
+     * INV-1003-64
+     *   items = 1
+     *
+     * INV-ADM-3326
+     *   items = 0
+     *   return_items = 1
+     */
+    const items =
+      Array.isArray(invoice.items) &&
+      invoice.items.length > 0
+        ? invoice.items
+        : Array.isArray(invoice.return_items)
+        ? invoice.return_items
+        : [];
+
+    /*
+     * Only Repzo's explicit is_void flag determines
+     * whether the invoice is void.
+     */
     const isVoid =
       invoice.is_void === true ||
-      Number(invoice.total ?? 0) <= 0;
+      invoice.is_void === 1;
 
     const status = isVoid
       ? "ملغية"
-      : statusMap[invoice.status] ?? invoice.status ?? "-";
+      : statusMap[invoice.status] ??
+        invoice.status ??
+        "-";
 
     const statusColor = isVoid
       ? "#6b7280"
       : invoice.status === "paid"
       ? "#16a34a"
       : "#dc2626";
-
-    // Normal invoices use items.
-    // Void/return invoices may use return_items instead.
-    const items =
-      Array.isArray(invoice.items) && invoice.items.length > 0
-        ? invoice.items
-        : Array.isArray(invoice.return_items)
-        ? invoice.return_items
-        : [];
 
     return `
 <!DOCTYPE html>
@@ -58,8 +84,8 @@ export class InvoiceTemplate {
 <meta charset="UTF-8">
 
 <link
-href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap"
-rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap"
+  rel="stylesheet"
 />
 
 <style>
@@ -252,12 +278,18 @@ ${invoice.tax_number ?? "-"}
 
 <div>
 <strong>اسم العميل:</strong>
-${invoice.client_name?.replace(/^[^-]+-\s*/, "") ?? "-"}
+${
+  invoice.client_name?.replace(
+    /^[^-]+-\s*/,
+    ""
+  ) ?? "-"
+}
 </div>
 
 <div>
 <strong>رقم الفاتورة:</strong>
 ${invoice.serial_number?.formatted ?? "-"}
+
 </div>
 
 </div>
@@ -269,77 +301,139 @@ ${invoice.serial_number?.formatted ?? "-"}
 <div class="info-grid">
 
 <div class="info">
-<div class="label">تاريخ الإنشاء</div>
-<div class="value">${formatDate(invoice.createdAt)}</div>
+
+<div class="label">
+تاريخ الإنشاء
+</div>
+
+<div class="value">
+${formatDate(invoice.createdAt)}
+</div>
+
 </div>
 
 <div class="info">
-<div class="label">تاريخ الإصدار</div>
-<div class="value">${formatDate(invoice.issue_date)}</div>
+
+<div class="label">
+تاريخ الإصدار
+</div>
+
+<div class="value">
+${formatDate(invoice.issue_date)}
+</div>
+
 </div>
 
 <div class="info">
-<div class="label">تاريخ الاستحقاق</div>
-<div class="value">${formatDate(invoice.due_date)}</div>
+
+<div class="label">
+تاريخ الاستحقاق
+</div>
+
+<div class="value">
+${formatDate(invoice.due_date)}
+</div>
+
 </div>
 
 <div class="info">
-<div class="label">حالة الفاتورة</div>
+
+<div class="label">
+حالة الفاتورة
+</div>
+
 <div
 class="status"
 style="background:${statusColor}">
 ${status}
 </div>
+
 </div>
 
 <div class="info">
-<div class="label">رمز العميل</div>
+
+<div class="label">
+رمز العميل
+</div>
+
 <div class="value">
-${String(invoice.client_id ?? "-").slice(-6)}
+${String(
+  invoice.client_id ?? "-"
+).slice(-6)}
 </div>
+
 </div>
 
 <div class="info">
-<div class="label">رقم العميل</div>
+
+<div class="label">
+رقم العميل
+</div>
+
 <div class="value">
 ${invoice.client_phone ?? "-"}
 </div>
+
 </div>
 
 <div class="info">
-<div class="label">عنوان العميل</div>
+
+<div class="label">
+عنوان العميل
+</div>
+
 <div class="value">
 ${invoice.address ?? "-"}
 </div>
+
 </div>
 
 <div class="info">
-<div class="label">التعليق</div>
+
+<div class="label">
+التعليق
+</div>
+
 <div class="value">
 ${invoice.comment ?? "-"}
 </div>
+
 </div>
 
 <div class="info">
-<div class="label">طريقة الدفع</div>
+
+<div class="label">
+طريقة الدفع
+</div>
+
 <div class="value">
+
 ${
   invoice.invoice_payment_type === "cash"
     ? "نقداً"
     : invoice.invoice_payment_type ?? "-"
 }
+
 </div>
+
 </div>
 
 <div class="info">
-<div class="label">حالة التسليم</div>
+
+<div class="label">
+حالة التسليم
+</div>
+
 <div class="value">
+
 ${
   invoice.delivered_status === "delivered"
     ? "تم التسليم"
     : "قيد التنفيذ"
 }
+
 </div>
+
 </div>
 
 </div>
@@ -368,12 +462,16 @@ ${
 
 <tbody>
 
-${items
-  .map(
-    (item: any, index: number) => `
+${
+  items.length > 0
+    ? items
+        .map(
+          (item: any, index: number) => `
 <tr>
 
-<td>${index + 1}</td>
+<td>
+${index + 1}
+</td>
 
 <td>
 ${
@@ -383,32 +481,54 @@ ${
 }
 </td>
 
-<td style="text-align:right;padding-right:15px;">
+<td
+style="text-align:right;padding-right:15px;"
+>
+
 ${
   item.variant?.product_name
     ?.replace(/^\*+/, "")
     .trim() ??
   item.variant?.product_local_name ??
-  ""
+  "-"
 }
+
 </td>
 
-<td>${Math.abs(Number(item.qty ?? 0))}</td>
-
-<td>${formatMoney(item.price)}</td>
+<td>
+${Math.abs(
+  Number(item.qty ?? 0)
+)}
+</td>
 
 <td>
+${formatMoney(item.price)}
+</td>
+
+<td>
+
 ${formatMoney(
   item.line_total ??
   item.lineTotalAfterDeduction ??
   0
 )}
+
 </td>
 
 </tr>
 `
-  )
-  .join("")}
+        )
+        .join("")
+    : `
+<tr>
+
+<td colspan="6">
+لا توجد منتجات
+</td>
+
+</tr>
+`
+}
 
 </tbody>
 
@@ -419,29 +539,59 @@ ${formatMoney(
 <table>
 
 <tr>
-<td>المجموع الفرعي</td>
-<td>${formatMoney(invoice.subtotal)}</td>
+
+<td>
+المجموع الفرعي
+</td>
+
+<td>
+${formatMoney(invoice.subtotal)}
+</td>
+
 </tr>
 
 <tr>
-<td>الخصم</td>
-<td>${formatMoney(invoice.discount_amount)}</td>
+
+<td>
+الخصم
+</td>
+
+<td>
+${formatMoney(invoice.discount_amount)}
+</td>
+
 </tr>
 
-${Object.values(invoice.taxes ?? {})
-  .map(
-    (tax: any) => `
+${
+  Object.values(invoice.taxes ?? {})
+    .map(
+      (tax: any) => `
 <tr>
-<td>${tax.name} (${tax.rate}%)</td>
-<td>${formatMoney(tax.total)}</td>
+
+<td>
+${tax.name} (${tax.rate}%)
+</td>
+
+<td>
+${formatMoney(tax.total)}
+</td>
+
 </tr>
 `
-  )
-  .join("")}
+    )
+    .join("")
+}
 
 <tr class="grand-total">
-<td>الإجمالي</td>
-<td>${formatMoney(invoice.total)}</td>
+
+<td>
+الإجمالي
+</td>
+
+<td>
+${formatMoney(invoice.total)}
+</td>
+
 </tr>
 
 </table>
