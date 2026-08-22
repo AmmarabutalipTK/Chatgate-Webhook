@@ -4,6 +4,7 @@ import path from "path";
 const logo = fs.readFileSync(
   path.join(__dirname, "../assets/logo.png")
 );
+
 const logoBase64 = logo.toString("base64");
 
 const formatDate = (date?: string) =>
@@ -17,22 +18,36 @@ const formatDate = (date?: string) =>
 
 export class InvoiceTemplate {
   static render(invoice: any = {}) {
- const formatMoney = (value: number = 0) =>
-  `${(Number(value) / 1000).toLocaleString("en-US")} IQD`;
+    const formatMoney = (value: number = 0) =>
+      `${Math.abs(Number(value) / 1000).toLocaleString("en-US")} IQD`;
 
     const statusMap: Record<string, string> = {
-  unpaid: "غير مدفوعة",
-  paid: "مدفوعة",
-};
+      unpaid: "غير مدفوعة",
+      paid: "مدفوعة",
+    };
 
-const status =  +invoice.total<=0?"ملغية": statusMap[invoice.status] ?? invoice.status;
+    const isVoid =
+      invoice.is_void === true ||
+      Number(invoice.total ?? 0) <= 0;
 
-const statusColor =
-  invoice.status === "paid"
-    ? "#16a34a"
-    : invoice.status === "void"
-    ? "#6b7280"
-    : "#dc2626";
+    const status = isVoid
+      ? "ملغية"
+      : statusMap[invoice.status] ?? invoice.status ?? "-";
+
+    const statusColor = isVoid
+      ? "#6b7280"
+      : invoice.status === "paid"
+      ? "#16a34a"
+      : "#dc2626";
+
+    // Normal invoices use items.
+    // Void/return invoices may use return_items instead.
+    const items =
+      Array.isArray(invoice.items) && invoice.items.length > 0
+        ? invoice.items
+        : Array.isArray(invoice.return_items)
+        ? invoice.return_items
+        : [];
 
     return `
 <!DOCTYPE html>
@@ -134,7 +149,6 @@ font-weight:700;
 
 .status{
 display:inline-block;
-background:#ef4444;
 color:white;
 padding:6px 14px;
 border-radius:4px;
@@ -241,10 +255,11 @@ ${invoice.tax_number ?? "-"}
 ${invoice.client_name?.replace(/^[^-]+-\s*/, "") ?? "-"}
 </div>
 
-  <div>
-    <strong>رقم الفاتورة:</strong>
-    ${invoice.serial_number?.formatted ?? "-"}
-  </div>
+<div>
+<strong>رقم الفاتورة:</strong>
+${invoice.serial_number?.formatted ?? "-"}
+</div>
+
 </div>
 
 </div>
@@ -286,39 +301,44 @@ ${String(invoice.client_id ?? "-").slice(-6)}
 
 <div class="info">
 <div class="label">رقم العميل</div>
-<div class="value">${invoice.client_phone ?? "-"}</div>
+<div class="value">
+${invoice.client_phone ?? "-"}
+</div>
 </div>
 
 <div class="info">
 <div class="label">عنوان العميل</div>
-<div class="value">${invoice.address ?? "-"}</div>
+<div class="value">
+${invoice.address ?? "-"}
+</div>
 </div>
 
 <div class="info">
 <div class="label">التعليق</div>
-<div class="value">${invoice.comment ?? "-"}</div>
+<div class="value">
+${invoice.comment ?? "-"}
 </div>
-
-
-
+</div>
 
 <div class="info">
 <div class="label">طريقة الدفع</div>
 <div class="value">
-${invoice.invoice_payment_type === "cash"
-  ? "نقداً"
-  : invoice.invoice_payment_type ?? "-"}
+${
+  invoice.invoice_payment_type === "cash"
+    ? "نقداً"
+    : invoice.invoice_payment_type ?? "-"
+}
 </div>
 </div>
-
-
 
 <div class="info">
 <div class="label">حالة التسليم</div>
 <div class="value">
-${invoice.delivered_status === "delivered"
-  ? "تم التسليم"
-  : "قيد التنفيذ"}
+${
+  invoice.delivered_status === "delivered"
+    ? "تم التسليم"
+    : "قيد التنفيذ"
+}
 </div>
 </div>
 
@@ -348,31 +368,42 @@ ${invoice.delivered_status === "delivered"
 
 <tbody>
 
-${(invoice.items ?? [])
+${items
   .map(
     (item: any, index: number) => `
 <tr>
+
 <td>${index + 1}</td>
 
-<td>${
+<td>
+${
   item.variant?.product_sku ??
   item.variant?.variant_sku ??
   "-"
-}</td>
+}
+</td>
 
 <td style="text-align:right;padding-right:15px;">
 ${
   item.variant?.product_name
     ?.replace(/^\*+/, "")
-    .trim() ?? ""
+    .trim() ??
+  item.variant?.product_local_name ??
+  ""
 }
 </td>
 
-<td>${item.qty ?? "-"}</td>
+<td>${Math.abs(Number(item.qty ?? 0))}</td>
 
 <td>${formatMoney(item.price)}</td>
 
-<td>${formatMoney(item.line_total)}</td>
+<td>
+${formatMoney(
+  item.line_total ??
+  item.lineTotalAfterDeduction ??
+  0
+)}
+</td>
 
 </tr>
 `
@@ -402,9 +433,9 @@ ${Object.values(invoice.taxes ?? {})
     (tax: any) => `
 <tr>
 <td>${tax.name} (${tax.rate}%)</td>
-<td>${formatMoney(tax.total)}
-</td>
-</tr>`
+<td>${formatMoney(tax.total)}</td>
+</tr>
+`
   )
   .join("")}
 
@@ -420,7 +451,6 @@ ${Object.values(invoice.taxes ?? {})
 </body>
 
 </html>
-
 `;
   }
 }
