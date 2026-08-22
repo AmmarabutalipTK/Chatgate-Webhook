@@ -18,50 +18,41 @@ const formatDate = (date?: string) =>
 
 export class InvoiceTemplate {
   static render(invoice: any = {}) {
-    const formatMoney = (value: number = 0) =>
-      `${Math.abs(
-        Number(value) / 1000
-      ).toLocaleString("en-US")} IQD`;
+    const formatMoney = (value: number = 0) => {
+      const amount = Math.abs(Number(value) / 1000);
 
+      return `${amount.toLocaleString("en-US")} IQD`;
+    };
+
+    /*
+     * Repzo status:
+     *
+     * unpaid -> غير مدفوعة
+     * paid   -> مدفوعة
+     *
+     * IMPORTANT:
+     * Do NOT use total <= 0 to determine void/cancelled.
+     *
+     * We found valid Repzo invoices where:
+     *
+     * status  = paid
+     * is_void = 0
+     * total   = 0
+     *
+     * Example:
+     * INV-ADM-3328
+     *
+     * Therefore only is_void determines cancellation.
+     */
     const statusMap: Record<string, string> = {
       unpaid: "غير مدفوعة",
       paid: "مدفوعة",
     };
 
-    /*
-     * Repzo:
-     *
-     * Normal invoice:
-     *   items: [...]
-     *   return_items: []
-     *
-     * Void / return invoice:
-     *   items: []
-     *   return_items: [...]
-     *
-     * Example:
-     * INV-1003-64
-     *   items = 1
-     *
-     * INV-ADM-3326
-     *   items = 0
-     *   return_items = 1
-     */
-    const items =
-      Array.isArray(invoice.items) &&
-      invoice.items.length > 0
-        ? invoice.items
-        : Array.isArray(invoice.return_items)
-        ? invoice.return_items
-        : [];
-
-    /*
-     * Only Repzo's explicit is_void flag determines
-     * whether the invoice is void.
-     */
     const isVoid =
       invoice.is_void === true ||
-      invoice.is_void === 1;
+      invoice.is_void === 1 ||
+      invoice.is_void === "1";
 
     const status = isVoid
       ? "ملغية"
@@ -75,8 +66,82 @@ export class InvoiceTemplate {
       ? "#16a34a"
       : "#dc2626";
 
+    /*
+     * Normal invoice:
+     *
+     * items: [...]
+     *
+     * Cancel/return invoice from Repzo:
+     *
+     * items: []
+     * return_items: [...]
+     *
+     * PdfService may replace items with the
+     * original invoice items before calling render().
+     *
+     * Therefore:
+     * 1. Use items if available.
+     * 2. Otherwise use return_items.
+     */
+    const items =
+      Array.isArray(invoice.items) &&
+      invoice.items.length > 0
+        ? invoice.items
+        : Array.isArray(invoice.return_items)
+        ? invoice.return_items
+        : [];
+
+    /*
+     * Escape HTML so unexpected characters from
+     * Repzo don't break the generated HTML.
+     */
+    const escapeHtml = (value: any) =>
+      String(value ?? "-")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+    /*
+     * Client name
+     *
+     * Repzo may return:
+     *
+     * CC12345-اسواق سيد هاشم
+     *
+     * We remove the code from the beginning.
+     */
+    const clientName =
+      typeof invoice.client_name === "string"
+        ? invoice.client_name
+            .replace(/^[^-]+-\s*/, "")
+            .trim()
+        : "-";
+
+    /*
+     * Payment type
+     */
+    const paymentType =
+      invoice.invoice_payment_type === "cash"
+        ? "نقداً"
+        : invoice.invoice_payment_type === "credit"
+        ? "آجل"
+        : invoice.invoice_payment_type ?? "-";
+
+    /*
+     * Delivery status
+     */
+    const deliveryStatus =
+      invoice.delivered_status === "delivered"
+        ? "تم التسليم"
+        : invoice.delivered_status
+        ? invoice.delivered_status
+        : "قيد التنفيذ";
+
     return `
 <!DOCTYPE html>
+
 <html lang="ar" dir="rtl">
 
 <head>
@@ -90,157 +155,163 @@ export class InvoiceTemplate {
 
 <style>
 
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-body{
-font-family:'Cairo',sans-serif;
-direction:rtl;
-padding:30px;
-color:#222;
-font-size:13px;
+body {
+  font-family: 'Cairo', sans-serif;
+  direction: rtl;
+  padding: 30px;
+  color: #222;
+  font-size: 13px;
 }
 
-.header{
-display:flex;
-justify-content:space-between;
-align-items:flex-start;
-margin-bottom:25px;
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 25px;
 }
 
-.invoice-title{
-font-size:42px;
-font-weight:700;
+.invoice-title {
+  font-size: 42px;
+  font-weight: 700;
 }
 
-.logo img{
-height:100px;
+.logo img {
+  height: 100px;
 }
 
-.company{
-margin-top:15px;
-text-align:right;
-line-height:1.8;
+.company {
+  margin-top: 15px;
+  text-align: right;
+  line-height: 1.8;
 }
 
-.company h2{
-font-size:28px;
-margin-bottom:8px;
+.company h2 {
+  font-size: 28px;
+  margin-bottom: 8px;
 }
 
-.top-row{
-display:flex;
-justify-content:space-between;
-margin-top:20px;
-margin-bottom:25px;
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  margin-bottom: 25px;
 }
 
-.customer{
-font-size:15px;
-line-height:2;
+.customer {
+  font-size: 15px;
+  line-height: 2;
 }
 
-.customer strong{
-font-weight:700;
+.customer strong {
+  font-weight: 700;
 }
 
-.divider{
-border-top:1px solid #ccc;
-margin:20px 0;
+.divider {
+  border-top: 1px solid #ccc;
+  margin: 20px 0;
 }
 
-.info-grid{
-display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:18px;
-margin-bottom:20px;
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 20px;
 }
 
-.info{
-line-height:1.9;
+.info {
+  line-height: 1.9;
 }
 
-.label{
-font-size:12px;
-color:#666;
+.label {
+  font-size: 12px;
+  color: #666;
 }
 
-.value{
-font-size:15px;
-font-weight:700;
+.value {
+  font-size: 15px;
+  font-weight: 700;
 }
 
-.status{
-display:inline-block;
-color:white;
-padding:6px 14px;
-border-radius:4px;
-font-size:13px;
-font-weight:700;
+.status {
+  display: inline-block;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
-table{
-width:100%;
-border-collapse:collapse;
-margin-top:25px;
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 25px;
 }
 
-thead{
-background:#ececec;
+thead {
+  background: #ececec;
 }
 
-th{
-border:1px solid #bfbfbf;
-padding:10px;
-font-weight:700;
-font-size:14px;
+th {
+  border: 1px solid #bfbfbf;
+  padding: 10px;
+  font-weight: 700;
+  font-size: 14px;
 }
 
-td{
-border:1px solid #cfcfcf;
-padding:10px;
-text-align:center;
+td {
+  border: 1px solid #cfcfcf;
+  padding: 10px;
+  text-align: center;
 }
 
-tbody tr:nth-child(even){
-background:#fafafa;
+tbody tr:nth-child(even) {
+  background: #fafafa;
 }
 
-.summary{
-width:330px;
-margin-right:auto;
-margin-top:30px;
+.summary {
+  width: 330px;
+  margin-right: auto;
+  margin-top: 30px;
 }
 
-.summary table{
-margin-top:0;
+.summary table {
+  margin-top: 0;
 }
 
-.summary td{
-border:none;
-padding:7px 0;
-text-align:right;
+.summary td {
+  border: none;
+  padding: 7px 0;
+  text-align: right;
 }
 
-.summary td:last-child{
-text-align:left;
-font-weight:bold;
+.summary td:last-child {
+  text-align: left;
+  font-weight: bold;
 }
 
-.grand-total td{
-font-size:20px;
-font-weight:700;
-padding-top:14px;
+.grand-total td {
+  font-size: 20px;
+  font-weight: 700;
+  padding-top: 14px;
 }
 
-.footer{
-margin-top:40px;
-text-align:center;
-color:#777;
-font-size:12px;
+.empty-items {
+  text-align: center;
+  padding: 20px;
+  color: #777;
+}
+
+.footer {
+  margin-top: 40px;
+  text-align: center;
+  color: #777;
+  font-size: 12px;
 }
 
 </style>
@@ -251,352 +322,397 @@ font-size:12px;
 
 <div class="header">
 
-<div class="invoice-title">
-فاتورة
+  <div class="invoice-title">
+    فاتورة
+  </div>
+
+  <div class="logo">
+    <img src="data:image/png;base64,${logoBase64}" />
+  </div>
+
 </div>
 
-<div class="logo">
-<img src="data:image/png;base64,${logoBase64}" />
-</div>
-
-</div>
 
 <div class="top-row">
 
-<div class="company">
+  <div class="company">
 
-<h2>شركة خيرات العبدالله للتوزيع</h2>
+    <h2>
+      شركة خيرات العبدالله للتوزيع
+    </h2>
 
-<div>
-<strong>الرقم الضريبي:</strong>
-${invoice.tax_number ?? "-"}
+    <div>
+      <strong>الرقم الضريبي:</strong>
+      ${escapeHtml(invoice.tax_number ?? "-")}
+    </div>
+
+  </div>
+
+
+  <div class="customer">
+
+    <div>
+      <strong>اسم العميل:</strong>
+      ${escapeHtml(clientName)}
+    </div>
+
+    <div>
+      <strong>رقم الفاتورة:</strong>
+      ${escapeHtml(
+        invoice.serial_number?.formatted ??
+          invoice.serial_number ??
+          "-"
+      )}
+    </div>
+
+  </div>
+
 </div>
 
-</div>
-
-<div class="customer">
-
-<div>
-<strong>اسم العميل:</strong>
-${
-  invoice.client_name?.replace(
-    /^[^-]+-\s*/,
-    ""
-  ) ?? "-"
-}
-</div>
-
-<div>
-<strong>رقم الفاتورة:</strong>
-${invoice.serial_number?.formatted ?? "-"}
-
-</div>
-
-</div>
-
-</div>
 
 <div class="divider"></div>
 
+
 <div class="info-grid">
 
-<div class="info">
 
-<div class="label">
-تاريخ الإنشاء
+  <div class="info">
+
+    <div class="label">
+      تاريخ الإنشاء
+    </div>
+
+    <div class="value">
+      ${formatDate(invoice.createdAt)}
+    </div>
+
+  </div>
+
+
+  <div class="info">
+
+    <div class="label">
+      تاريخ الإصدار
+    </div>
+
+    <div class="value">
+      ${formatDate(invoice.issue_date)}
+    </div>
+
+  </div>
+
+
+  <div class="info">
+
+    <div class="label">
+      تاريخ الاستحقاق
+    </div>
+
+    <div class="value">
+      ${formatDate(invoice.due_date)}
+    </div>
+
+  </div>
+
+
+  <div class="info">
+
+    <div class="label">
+      حالة الفاتورة
+    </div>
+
+    <div
+      class="status"
+      style="background:${statusColor}"
+    >
+      ${escapeHtml(status)}
+    </div>
+
+  </div>
+
+
+  <div class="info">
+
+    <div class="label">
+      رمز العميل
+    </div>
+
+    <div class="value">
+      ${escapeHtml(
+        invoice.client_id
+          ? String(invoice.client_id).slice(-6)
+          : "-"
+      )}
+    </div>
+
+  </div>
+
+
+  <div class="info">
+
+    <div class="label">
+      رقم العميل
+    </div>
+
+    <div class="value">
+      ${escapeHtml(invoice.client_phone ?? "-")}
+    </div>
+
+  </div>
+
+
+  <div class="info">
+
+    <div class="label">
+      عنوان العميل
+    </div>
+
+    <div class="value">
+      ${escapeHtml(invoice.address ?? "-")}
+    </div>
+
+  </div>
+
+
+  <div class="info">
+
+    <div class="label">
+      التعليق
+    </div>
+
+    <div class="value">
+      ${escapeHtml(invoice.comment ?? "-")}
+    </div>
+
+  </div>
+
+
+  <div class="info">
+
+    <div class="label">
+      طريقة الدفع
+    </div>
+
+    <div class="value">
+      ${escapeHtml(paymentType)}
+    </div>
+
+  </div>
+
+
+  <div class="info">
+
+    <div class="label">
+      حالة التسليم
+    </div>
+
+    <div class="value">
+      ${escapeHtml(deliveryStatus)}
+    </div>
+
+  </div>
+
+
 </div>
 
-<div class="value">
-${formatDate(invoice.createdAt)}
-</div>
-
-</div>
-
-<div class="info">
-
-<div class="label">
-تاريخ الإصدار
-</div>
-
-<div class="value">
-${formatDate(invoice.issue_date)}
-</div>
-
-</div>
-
-<div class="info">
-
-<div class="label">
-تاريخ الاستحقاق
-</div>
-
-<div class="value">
-${formatDate(invoice.due_date)}
-</div>
-
-</div>
-
-<div class="info">
-
-<div class="label">
-حالة الفاتورة
-</div>
-
-<div
-class="status"
-style="background:${statusColor}">
-${status}
-</div>
-
-</div>
-
-<div class="info">
-
-<div class="label">
-رمز العميل
-</div>
-
-<div class="value">
-${String(
-  invoice.client_id ?? "-"
-).slice(-6)}
-</div>
-
-</div>
-
-<div class="info">
-
-<div class="label">
-رقم العميل
-</div>
-
-<div class="value">
-${invoice.client_phone ?? "-"}
-</div>
-
-</div>
-
-<div class="info">
-
-<div class="label">
-عنوان العميل
-</div>
-
-<div class="value">
-${invoice.address ?? "-"}
-</div>
-
-</div>
-
-<div class="info">
-
-<div class="label">
-التعليق
-</div>
-
-<div class="value">
-${invoice.comment ?? "-"}
-</div>
-
-</div>
-
-<div class="info">
-
-<div class="label">
-طريقة الدفع
-</div>
-
-<div class="value">
-
-${
-  invoice.invoice_payment_type === "cash"
-    ? "نقداً"
-    : invoice.invoice_payment_type ?? "-"
-}
-
-</div>
-
-</div>
-
-<div class="info">
-
-<div class="label">
-حالة التسليم
-</div>
-
-<div class="value">
-
-${
-  invoice.delivered_status === "delivered"
-    ? "تم التسليم"
-    : "قيد التنفيذ"
-}
-
-</div>
-
-</div>
-
-</div>
 
 <table>
 
-<thead>
+  <thead>
 
+    <tr>
+
+      <th>#</th>
+
+      <th>SKU</th>
+
+      <th>اسم المنتج</th>
+
+      <th>الكمية</th>
+
+      <th>السعر</th>
+
+      <th>الإجمالي</th>
+
+    </tr>
+
+  </thead>
+
+
+  <tbody>
+
+    ${
+      items.length > 0
+        ? items
+            .map(
+              (item: any, index: number) => {
+                const productName =
+                  item.variant?.product_name ??
+                  item.variant?.product_local_name ??
+                  item.variant?.variant_name ??
+                  "-";
+
+                const sku =
+                  item.variant?.product_sku ??
+                  item.variant?.variant_sku ??
+                  item.variant?.product_barcode ??
+                  item.variant?.variant_barcode ??
+                  "-";
+
+                const quantity = Math.abs(
+                  Number(item.qty ?? 0)
+                );
+
+                const price =
+                  item.price ??
+                  item.return_price_float ??
+                  item.original_price_before_tax_per_unit_float ??
+                  0;
+
+                const lineTotal =
+                  item.line_total ??
+                  item.lineTotalAfterDeduction ??
+                  item.total_before_tax ??
+                  0;
+
+                return `
 <tr>
 
-<th>#</th>
+  <td>
+    ${index + 1}
+  </td>
 
-<th>SKU</th>
+  <td>
+    ${escapeHtml(sku)}
+  </td>
 
-<th>اسم المنتج</th>
+  <td
+    style="
+      text-align:right;
+      padding-right:15px;
+    "
+  >
+${escapeHtml(
+  String(productName)
+    .replace(/^\*+/, "")
+    .trim()
+)}
+  </td>
 
-<th>الكمية</th>
+  <td>
+    ${quantity}
+  </td>
 
-<th>السعر</th>
+  <td>
+    ${formatMoney(price)}
+  </td>
 
-<th>الإجمالي</th>
+  <td>
+    ${formatMoney(lineTotal)}
+  </td>
 
 </tr>
-
-</thead>
-
-<tbody>
-
-${
-  items.length > 0
-    ? items
-        .map(
-          (item: any, index: number) => `
+`;
+              }
+            )
+            .join("")
+        : `
 <tr>
 
-<td>
-${index + 1}
-</td>
-
-<td>
-${
-  item.variant?.product_sku ??
-  item.variant?.variant_sku ??
-  "-"
-}
-</td>
-
-<td
-style="text-align:right;padding-right:15px;"
->
-
-${
-  item.variant?.product_name
-    ?.replace(/^\*+/, "")
-    .trim() ??
-  item.variant?.product_local_name ??
-  "-"
-}
-
-</td>
-
-<td>
-${Math.abs(
-  Number(item.qty ?? 0)
-)}
-</td>
-
-<td>
-${formatMoney(item.price)}
-</td>
-
-<td>
-
-${formatMoney(
-  item.line_total ??
-  item.lineTotalAfterDeduction ??
-  0
-)}
-
-</td>
+  <td
+    colspan="6"
+    class="empty-items"
+  >
+    لا توجد أصناف
+  </td>
 
 </tr>
 `
-        )
-        .join("")
-    : `
-<tr>
+    }
 
-<td colspan="6">
-لا توجد منتجات
-</td>
-
-</tr>
-`
-}
-
-</tbody>
+  </tbody>
 
 </table>
+
 
 <div class="summary">
 
-<table>
+  <table>
 
+    <tr>
+
+      <td>
+        المجموع الفرعي
+      </td>
+
+      <td>
+        ${formatMoney(invoice.subtotal)}
+      </td>
+
+    </tr>
+
+
+    <tr>
+
+      <td>
+        الخصم
+      </td>
+
+      <td>
+        ${formatMoney(invoice.discount_amount)}
+      </td>
+
+    </tr>
+
+
+    ${
+      invoice.taxes &&
+      typeof invoice.taxes === "object"
+        ? Object.values(invoice.taxes)
+            .map(
+              (tax: any) => `
 <tr>
 
-<td>
-المجموع الفرعي
-</td>
+  <td>
+    ${escapeHtml(tax.name ?? "ضريبة")}
+    (${escapeHtml(tax.rate ?? 0)}%)
+  </td>
 
-<td>
-${formatMoney(invoice.subtotal)}
-</td>
-
-</tr>
-
-<tr>
-
-<td>
-الخصم
-</td>
-
-<td>
-${formatMoney(invoice.discount_amount)}
-</td>
-
-</tr>
-
-${
-  Object.values(invoice.taxes ?? {})
-    .map(
-      (tax: any) => `
-<tr>
-
-<td>
-${tax.name} (${tax.rate}%)
-</td>
-
-<td>
-${formatMoney(tax.total)}
-</td>
+  <td>
+    ${formatMoney(tax.total)}
+  </td>
 
 </tr>
 `
-    )
-    .join("")
-}
+            )
+            .join("")
+        : ""
+    }
 
-<tr class="grand-total">
 
-<td>
-الإجمالي
-</td>
+    <tr class="grand-total">
 
-<td>
-${formatMoney(invoice.total)}
-</td>
+      <td>
+        الإجمالي
+      </td>
 
-</tr>
+      <td>
+        ${formatMoney(invoice.total)}
+      </td>
 
-</table>
+    </tr>
+
+  </table>
 
 </div>
+
+
+<div class="footer">
+
+  ${isVoid ? "هذه الفاتورة ملغية" : ""}
+
+</div>
+
 
 </body>
 
