@@ -9,7 +9,22 @@ export class PdfService {
     invoiceId: string,
     reply: FastifyReply
   ) {
-    const delivery = await prisma.delivery.findFirst({
+    /*
+     * ============================================================
+     * FIND THE CORRECT INVOICE DELIVERY
+     * ============================================================
+     *
+     * There can be multiple Delivery records for the same invoice.
+     *
+     * Some records can be payment/transaction events such as:
+     *
+     * status: "consumed"
+     *
+     * Those are NOT invoice payloads and should not be used
+     * to generate the invoice PDF.
+     */
+
+    const deliveries = await prisma.delivery.findMany({
       where: {
         invoiceId,
       },
@@ -18,150 +33,348 @@ export class PdfService {
       },
     });
 
-    if (!delivery) {
+    if (!deliveries.length) {
       return reply.code(404).send({
         success: false,
         message: "Invoice not found",
       });
     }
 
-    let payload: any;
-
-    try {
-      payload = JSON.parse(delivery.requestBody);
-    } catch (error) {
-      console.error(
-        "Failed to parse invoice requestBody:",
-        error
-      );
-
-      return reply.code(500).send({
-        success: false,
-        message: "Invalid invoice data",
-      });
-    }
-
-    let invoice = payload?.data ?? payload;
-
-    if (!invoice || typeof invoice !== "object") {
-      return reply.code(500).send({
-        success: false,
-        message: "Invalid invoice payload",
-      });
-    }
+    let delivery: any = null;
+    let invoice: any = null;
 
     /*
-     * For void/cancel invoices:
-     *
-     * Repzo sends:
-     *
-     * items: []
-     * return_items: [...]
-     *
-     * return_items contains:
-     *
-     * returned_from_serial_number.formatted
+     * Search from newest to oldest until we find an actual
+     * invoice payload.
+     */
+    for (const candidate of deliveries) {
+      try {
+        const payload = JSON.parse(
+          candidate.requestBody
+        );
+
+        const data =
+          payload?.data ?? payload;
+
+        if (!data || typeof data !== "object") {
+          continue;
+        }
+
+        /*
+         * Actual invoice payload indicators.
+         *
+         * Payment events such as "consumed" normally don't
+         * contain these invoice structures.
+         */
+        const isInvoicePayload =
+          data?.serial_number?.formatted === invoiceId ||
+          Array.isArray(data?.items) ||
+          Array.isArray(data?.return_items) ||
+          data?.is_void !== undefined;
+
+        if (isInvoicePayload) {
+          delivery = candidate;
+          invoice = data;
+          break;
+        }
+      } catch (error) {
+        console.error(
+          `Failed to parse Delivery ${candidate.id}:`,
+          error
+        );
+      }
+    }
+
+    if (!delivery || !invoice) {
+      return reply.code(404).send({
+        success: false,
+        message: "Invoice data not found",
+      });
+    }
+
+    console.log(
+      "========================================"
+    );
+
+    console.log("Invoice delivery selected:", {
+      requestedInvoiceId: invoiceId,
+      deliveryId: delivery.id,
+      createdAt: delivery.createdAt,
+      status: invoice.status,
+      serial:
+        invoice.serial_number?.formatted,
+      items: Array.isArray(invoice.items)
+        ? invoice.items.length
+        : 0,
+      returnItems: Array.isArray(
+        invoice.return_items
+      )
+        ? invoice.return_items.length
+        : 0,
+      isVoid: invoice.is_void,
+    });
+
+    console.log(
+      "========================================"
+    );
+
+    /*
+     * ============================================================
+     * VOID / CANCEL / RETURN INVOICE
+     * ============================================================
      *
      * Example:
      *
      * INV-ADM-3326
-     *      ↓
-     * INV-ADM-3323
      *
-     * We use the original invoice from our DB
-     * to get the actual product items.
+     * items: []
+     *
+     * return_items:
+     * [
+     *   {
+     *     returned_from_serial_number: {
+     *       formatted: "INV-ADM-3323"
+     *     }
+     *   }
+     * ]
+     *
+     * We fetch INV-ADM-3323 from our DB and use its items.
      */
+
     const isVoid =
       invoice.is_void === true ||
-      invoice.is_void === 1;
+      invoice.is_void === 1 ||
+      invoice.is_void === "true";
+
+    const hasEmptyItems =
+      !Array.isArray(invoice.items) ||
+      invoice.items.length === 0;
+
+    const hasReturnItems =
+      Array.isArray(invoice.return_items) &&
+      invoice.return_items.length > 0;
 
     if (
       isVoid &&
-      Array.isArray(invoice.return_items) &&
-      invoice.return_items.length > 0
+      hasEmptyItems &&
+      hasReturnItems
     ) {
       const originalInvoiceId =
-        invoice.return_items[0]
+        invoice.return_items?.[0]
           ?.returned_from_serial_number
           ?.formatted;
 
-      console.log("Void invoice detected:", {
+      console.log(
+        "========================================"
+      );
+
+      console.log("VOID INVOICE FALLBACK:", {
         invoiceId,
         originalInvoiceId,
+        currentItems: Array.isArray(
+          invoice.items
+        )
+          ? invoice.items.length
+          : 0,
+        returnItems:
+          invoice.return_items.length,
       });
 
+      console.log(
+        "========================================"
+      );
+
       if (originalInvoiceId) {
-        const originalDelivery =
-          await prisma.delivery.findFirst({
+        /*
+         * Find the original invoice.
+         *
+         * Again, don't blindly use the newest Delivery
+         * because there may be payment events.
+         */
+        const originalDeliveries =
+          await prisma.delivery.findMany({
             where: {
-              invoiceId: originalInvoiceId,
+              invoiceId:
+                originalInvoiceId,
             },
             orderBy: {
               createdAt: "desc",
             },
           });
 
-        if (originalDelivery) {
+        let originalInvoice: any = null;
+        let originalDelivery: any = null;
+
+        for (const candidate of originalDeliveries) {
           try {
             const originalPayload =
               JSON.parse(
-                originalDelivery.requestBody
+                candidate.requestBody
               );
 
-            const originalInvoice =
+            const data =
               originalPayload?.data ??
               originalPayload;
 
+            if (
+              !data ||
+              typeof data !== "object"
+            ) {
+              continue;
+            }
+
             /*
-             * Keep the cancellation invoice's data,
-             * but replace its empty items with the
-             * original invoice items.
+             * Original invoice must contain actual
+             * invoice items or return items.
              */
-            invoice = {
-              ...invoice,
+            const isActualInvoice =
+              data?.serial_number?.formatted ===
+                originalInvoiceId ||
+              Array.isArray(data?.items) ||
+              Array.isArray(
+                data?.return_items
+              );
 
-              items:
-                Array.isArray(originalInvoice.items)
-                  ? originalInvoice.items
-                  : [],
+            if (
+              isActualInvoice &&
+              Array.isArray(data?.items) &&
+              data.items.length > 0
+            ) {
+              originalDelivery =
+                candidate;
 
-              /*
-               * Keep the original return_items too,
-               * but the template will use items first.
-               */
-              return_items:
-                invoice.return_items,
-            };
+              originalInvoice = data;
 
-            console.log(
-              "Original invoice items loaded:",
-              {
-                originalInvoiceId,
-                items: Array.isArray(
-                  originalInvoice.items
-                )
-                  ? originalInvoice.items.length
-                  : 0,
-              }
-            );
+              break;
+            }
           } catch (error) {
             console.error(
-              "Failed to parse original invoice:",
+              `Failed to parse original Delivery ${candidate.id}:`,
               error
             );
           }
+        }
+
+        if (
+          originalDelivery &&
+          originalInvoice
+        ) {
+          const originalItems =
+            Array.isArray(
+              originalInvoice.items
+            )
+              ? originalInvoice.items
+              : [];
+
+          console.log(
+            "========================================"
+          );
+
+          console.log(
+            "ORIGINAL INVOICE FOUND:",
+            {
+              originalInvoiceId,
+              originalDeliveryId:
+                originalDelivery.id,
+              originalCreatedAt:
+                originalDelivery.createdAt,
+              originalStatus:
+                originalInvoice.status,
+              originalItems:
+                originalItems.length,
+              originalTotal:
+                originalInvoice.total,
+            }
+          );
+
+          console.log(
+            "========================================"
+          );
+
+          /*
+           * Keep the VOID invoice data:
+           *
+           * - serial number
+           * - total
+           * - status
+           * - is_void
+           * - return information
+           *
+           * Only replace the empty items.
+           */
+          invoice = {
+            ...invoice,
+            items: originalItems,
+          };
+
+          console.log(
+            "Void invoice items replaced:",
+            {
+              invoiceId,
+              items:
+                Array.isArray(
+                  invoice.items
+                )
+                  ? invoice.items.length
+                  : 0,
+            }
+          );
         } else {
           console.warn(
-            `Original invoice not found in DB: ${originalInvoiceId}`
+            `Original invoice not found or has no items: ${originalInvoiceId}`
           );
         }
+      } else {
+        console.warn(
+          `Void invoice ${invoiceId} has no returned_from_serial_number`
+        );
       }
     }
+
+    /*
+     * ============================================================
+     * NORMALIZE STATUS
+     * ============================================================
+     *
+     * Some Repzo events may contain:
+     *
+     * paid
+     * unpaid
+     * consumed
+     *
+     * "consumed" is a payment event and should be displayed
+     * as "مدفوعة" rather than literally showing "consumed".
+     */
+
+    const normalizedStatus =
+      String(invoice.status ?? "")
+        .trim()
+        .toLowerCase();
+
+    if (
+      normalizedStatus === "consumed"
+    ) {
+      invoice = {
+        ...invoice,
+        status: "paid",
+      };
+    }
+
+    /*
+     * ============================================================
+     * FINAL LOG
+     * ============================================================
+     */
+
+    console.log(
+      "========================================"
+    );
 
     console.log("Generating PDF:", {
       invoiceId,
       status: invoice.status,
       isVoid: invoice.is_void,
+      total: invoice.total,
 
       items: Array.isArray(invoice.items)
         ? invoice.items.length
@@ -174,9 +387,22 @@ export class PdfService {
         : 0,
     });
 
+    console.log(
+      "========================================"
+    );
+
+    /*
+     * ============================================================
+     * GENERATE PDF
+     * ============================================================
+     */
+
     const browser = await puppeteer.launch({
-      executablePath: "/usr/bin/chromium-browser",
+      executablePath:
+        "/usr/bin/chromium-browser",
+
       headless: true,
+
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -187,7 +413,8 @@ export class PdfService {
     });
 
     try {
-      const page = await browser.newPage();
+      const page =
+        await browser.newPage();
 
       await page.setViewport({
         width: 1240,
@@ -196,25 +423,31 @@ export class PdfService {
       });
 
       await page.setContent(
-        InvoiceTemplate.render(invoice),
+        InvoiceTemplate.render(
+          invoice
+        ),
         {
           waitUntil: "load",
         }
       );
 
-      await page.emulateMediaType("screen");
+      await page.emulateMediaType(
+        "screen"
+      );
 
-      const pdf = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        preferCSSPageSize: true,
-        margin: {
-          top: "20mm",
-          right: "20mm",
-          bottom: "20mm",
-          left: "20mm",
-        },
-      });
+      const pdf =
+        await page.pdf({
+          format: "A4",
+          printBackground: true,
+          preferCSSPageSize: true,
+
+          margin: {
+            top: "20mm",
+            right: "20mm",
+            bottom: "20mm",
+            left: "20mm",
+          },
+        });
 
       const fileName =
         `Invoice-${invoiceId}.pdf`;
@@ -222,20 +455,24 @@ export class PdfService {
       return reply
         .code(200)
         .type("application/pdf")
+
         .header(
           "Content-Disposition",
           `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(
             fileName
           )}`
         )
+
         .header(
           "Content-Length",
           pdf.length
         )
+
         .header(
           "X-Content-Type-Options",
           "nosniff"
         )
+
         .send(pdf);
     } finally {
       await browser.close();
