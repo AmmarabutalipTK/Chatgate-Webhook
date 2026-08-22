@@ -41,10 +41,7 @@ export class PdfService {
       });
     }
 
-    // Support both payload shapes:
-    // { data: invoice }
-    // invoice
-    const invoice = payload?.data ?? payload;
+    let invoice = payload?.data ?? payload;
 
     if (!invoice || typeof invoice !== "object") {
       return reply.code(500).send({
@@ -53,14 +50,126 @@ export class PdfService {
       });
     }
 
+    /*
+     * For void/cancel invoices:
+     *
+     * Repzo sends:
+     *
+     * items: []
+     * return_items: [...]
+     *
+     * return_items contains:
+     *
+     * returned_from_serial_number.formatted
+     *
+     * Example:
+     *
+     * INV-ADM-3326
+     *      ↓
+     * INV-ADM-3323
+     *
+     * We use the original invoice from our DB
+     * to get the actual product items.
+     */
+    const isVoid =
+      invoice.is_void === true ||
+      invoice.is_void === 1;
+
+    if (
+      isVoid &&
+      Array.isArray(invoice.return_items) &&
+      invoice.return_items.length > 0
+    ) {
+      const originalInvoiceId =
+        invoice.return_items[0]
+          ?.returned_from_serial_number
+          ?.formatted;
+
+      console.log("Void invoice detected:", {
+        invoiceId,
+        originalInvoiceId,
+      });
+
+      if (originalInvoiceId) {
+        const originalDelivery =
+          await prisma.delivery.findFirst({
+            where: {
+              invoiceId: originalInvoiceId,
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          });
+
+        if (originalDelivery) {
+          try {
+            const originalPayload =
+              JSON.parse(
+                originalDelivery.requestBody
+              );
+
+            const originalInvoice =
+              originalPayload?.data ??
+              originalPayload;
+
+            /*
+             * Keep the cancellation invoice's data,
+             * but replace its empty items with the
+             * original invoice items.
+             */
+            invoice = {
+              ...invoice,
+
+              items:
+                Array.isArray(originalInvoice.items)
+                  ? originalInvoice.items
+                  : [],
+
+              /*
+               * Keep the original return_items too,
+               * but the template will use items first.
+               */
+              return_items:
+                invoice.return_items,
+            };
+
+            console.log(
+              "Original invoice items loaded:",
+              {
+                originalInvoiceId,
+                items: Array.isArray(
+                  originalInvoice.items
+                )
+                  ? originalInvoice.items.length
+                  : 0,
+              }
+            );
+          } catch (error) {
+            console.error(
+              "Failed to parse original invoice:",
+              error
+            );
+          }
+        } else {
+          console.warn(
+            `Original invoice not found in DB: ${originalInvoiceId}`
+          );
+        }
+      }
+    }
+
     console.log("Generating PDF:", {
       invoiceId,
       status: invoice.status,
       isVoid: invoice.is_void,
+
       items: Array.isArray(invoice.items)
         ? invoice.items.length
         : 0,
-      returnItems: Array.isArray(invoice.return_items)
+
+      returnItems: Array.isArray(
+        invoice.return_items
+      )
         ? invoice.return_items.length
         : 0,
     });
@@ -107,7 +216,8 @@ export class PdfService {
         },
       });
 
-      const fileName = `Invoice-${invoiceId}.pdf`;
+      const fileName =
+        `Invoice-${invoiceId}.pdf`;
 
       return reply
         .code(200)
@@ -118,8 +228,14 @@ export class PdfService {
             fileName
           )}`
         )
-        .header("Content-Length", pdf.length)
-        .header("X-Content-Type-Options", "nosniff")
+        .header(
+          "Content-Length",
+          pdf.length
+        )
+        .header(
+          "X-Content-Type-Options",
+          "nosniff"
+        )
         .send(pdf);
     } finally {
       await browser.close();
