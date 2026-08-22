@@ -27,16 +27,7 @@ export class RepzoEvent {
     deliveryId: string
   ) {
     const companyName = payload.companyName;
-
-    
     const data = payload.data;
-
-    console.log("========== REPZO EVENT ==========");
-console.log("companyName:", companyName);
-console.log("clientId:", data?.client_id);
-console.log("status:", data?.status);
-console.log("invoiceId:", data?.serial_number?.formatted);
-console.log("=================================");
 
     const config = REPZO_CONFIG[companyName];
 
@@ -53,24 +44,41 @@ console.log("=================================");
 
     const client = await this.getClient(
       data.client_id,
-      token ?? process.env.REPZO_TOKEN!
+      token
     );
 
-    console.log("REPZO CLIENT LOADED:", JSON.stringify(client, null, 2));
     const invoiceId = data.serial_number.formatted;
 
     const total = this.formatTotal(data);
 
-    const pdfUrl = `${process.env.BASE_URL}/invoice/${invoiceId}.pdf`;
+    const pdfUrl =
+      `${process.env.BASE_URL}/invoice/${invoiceId}.pdf`;
 
-    // Use phone first, then fall back to cell_phone
-    const phone = client.phone ?? client.cell_phone ?? "";
+    /*
+     * Repzo can store the customer number in either:
+     *
+     * 1. phone
+     * 2. cell_phone
+     *
+     * Prefer phone, then fall back to cell_phone.
+     */
+    const phone =
+      client.phone ||
+      client.cell_phone ||
+      "";
 
-    console.log("PHONE RESOLVED:", phone);
-console.log("WILL SEND TO CHATGATE:", !!phone);
+    console.log("REPZO CLIENT:", {
+      clientId: data.client_id,
+      clientName: client.name,
+      phone: client.phone,
+      cell_phone: client.cell_phone,
+      resolvedPhone: phone,
+    });
 
     await prisma.delivery.update({
-      where: { id: deliveryId },
+      where: {
+        id: deliveryId,
+      },
       data: {
         clientId: data.client_id,
         clientName: client.name,
@@ -81,11 +89,16 @@ console.log("WILL SEND TO CHATGATE:", !!phone);
     await DeliveryLogger.success(
       deliveryId,
       `Customer loaded: ${client.name}${
-        phone ? ` - phone: ${phone}` : " - no phone"
+        phone
+          ? ` - phone: ${phone}`
+          : " - no phone or cell_phone"
       }`
     );
 
-    // Don't send an invalid WhatsApp request
+    /*
+     * Don't send an invalid WhatsApp request
+     * when Repzo has no phone number.
+     */
     if (!phone) {
       await DeliveryLogger.info(
         deliveryId,
@@ -95,14 +108,15 @@ console.log("WILL SEND TO CHATGATE:", !!phone);
       return;
     }
 
-    console.log("========== CALLING WEBHOOK SERVICE ==========");
-console.log({
-  invoiceId,
-  phone,
-  companyName,
-  status: data.status,
-});
-console.log("=============================================");
+    console.log(
+      "SENDING TO CHATGATE:",
+      {
+        invoiceId,
+        phone,
+        companyName,
+        status: data.status,
+      }
+    );
 
     return WebhookService.send(
       {
@@ -118,11 +132,7 @@ console.log("=============================================");
       },
       deliveryId
     );
-
-    
   }
-
-  
 
   private static async getClient(
     clientId: string,
@@ -145,13 +155,19 @@ console.log("=============================================");
 
   private static formatTotal(data: any): string {
     const amount = Number(
-      String(data.total ?? data.amount ?? 0).replace(/,/g, "")
+      String(
+        data.total ?? data.amount ?? 0
+      ).replace(/,/g, "")
     );
 
-    return Math.abs(amount / 1000).toLocaleString("en-US");
+    return Math.abs(
+      amount / 1000
+    ).toLocaleString("en-US");
   }
 
-  private static getEventType(status?: string): string {
+  private static getEventType(
+    status?: string
+  ): string {
     switch (status) {
       case "consumed":
         return "دفع";
