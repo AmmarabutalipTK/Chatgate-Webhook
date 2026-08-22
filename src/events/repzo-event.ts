@@ -27,7 +27,16 @@ export class RepzoEvent {
     deliveryId: string
   ) {
     const companyName = payload.companyName;
+
+    
     const data = payload.data;
+
+    console.log("========== REPZO EVENT ==========");
+console.log("companyName:", companyName);
+console.log("clientId:", data?.client_id);
+console.log("status:", data?.status);
+console.log("invoiceId:", data?.serial_number?.formatted);
+console.log("=================================");
 
     const config = REPZO_CONFIG[companyName];
 
@@ -47,6 +56,7 @@ export class RepzoEvent {
       token ?? process.env.REPZO_TOKEN!
     );
 
+    console.log("REPZO CLIENT LOADED:", JSON.stringify(client, null, 2));
     const invoiceId = data.serial_number.formatted;
 
     const total = this.formatTotal(data);
@@ -55,6 +65,9 @@ export class RepzoEvent {
 
     // Use phone first, then fall back to cell_phone
     const phone = client.phone ?? client.cell_phone ?? "";
+
+    console.log("PHONE RESOLVED:", phone);
+console.log("WILL SEND TO CHATGATE:", !!phone);
 
     await prisma.delivery.update({
       where: { id: deliveryId },
@@ -82,6 +95,15 @@ export class RepzoEvent {
       return;
     }
 
+    console.log("========== CALLING WEBHOOK SERVICE ==========");
+console.log({
+  invoiceId,
+  phone,
+  companyName,
+  status: data.status,
+});
+console.log("=============================================");
+
     return WebhookService.send(
       {
         event: payload.event,
@@ -96,7 +118,11 @@ export class RepzoEvent {
       },
       deliveryId
     );
+
+    
   }
+
+  
 
   private static async getClient(
     clientId: string,

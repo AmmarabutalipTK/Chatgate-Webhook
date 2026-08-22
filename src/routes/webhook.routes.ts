@@ -149,7 +149,6 @@ const handleEvent =
         invoiceId: string;
       };
 
-
       return PdfService.download(invoiceId, reply);
     }
   );
