@@ -7,7 +7,9 @@ export class WebhookService {
     payload: Record<string, any>,
     deliveryId: string
   ) {
-    const event = String(payload.event);
+    console.log("========== WEBHOOK SERVICE SEND ==========");
+
+    const event = String(payload.event ?? "");
     const name = String(payload.client_name ?? "");
     const total = String(payload.total ?? "");
     const pdfUrl = String(payload.pdfUrl ?? "");
@@ -16,40 +18,57 @@ export class WebhookService {
     const invoiceId = String(payload.invoiceId ?? "");
     const companyName = String(payload.companyName ?? "");
 
-const phone_no = String(payload?.phone_no).replace(/\D/g, "");
+    console.log("DEBUG 1: payload extracted");
 
-const body: Record<string, any> = {
-  event,
-  "user.channel": "whatsapp",
-  "user.phone_no": phone_no,
-  sum: total,
-  msg,
-  name5: name,
-  event_type,
-  pdfUrl,
-  invoiceId,
-  companyName
-};
+    const phone_no = String(payload.phone_no ?? "").replace(/\D/g, "");
 
-    // if (pdfUrl) {
-    //   body.pdfUrl = pdfUrl;
-    // }
+    console.log("DEBUG 2: phone:", phone_no);
+
+    const body: Record<string, any> = {
+      event,
+      "user.channel": "whatsapp",
+      "user.phone_no": phone_no,
+      sum: total,
+      msg,
+      name5: name,
+      event_type,
+      pdfUrl,
+      invoiceId,
+      companyName,
+    };
+
+    console.log("DEBUG 3: body created");
+    console.log(JSON.stringify(body, null, 2));
 
     const url =
       "https://api.chatgate.io/bot-api/v2.0/customer/125419/bot/899870cca0c847b4/flow/6A279921EE5B46779084F487191483C5";
+
+    console.log("DEBUG 4: URL ready");
+
+    const auth = process.env.CHATGATE_AUTH?.trim();
+
+    console.log("DEBUG 5: CHATGATE_AUTH exists:", !!auth);
 
     await DeliveryLogger.info(
       deliveryId,
       "Sending request to ChatGate"
     );
 
+    console.log("DEBUG 6: ABOUT TO CALL CHATGATE");
+    console.log("=========================================");
+
     try {
       const response = await axios.post(url, body, {
         headers: {
-          Authorization: `Basic ${process.env.CHATGATE_AUTH}`,
+          Authorization: `Basic ${auth}`,
           "Content-Type": "application/json",
         },
+        timeout: 15000,
       });
+
+      console.log("DEBUG 7: CHATGATE RESPONDED");
+      console.log("ChatGate status:", response.status);
+      console.log("ChatGate response:", response.data);
 
       await DeliveryLogger.success(
         deliveryId,
@@ -75,6 +94,18 @@ const body: Record<string, any> = {
 
       return response.data;
     } catch (error: any) {
+      console.error("========== CHATGATE ERROR ==========");
+
+      console.error("Error message:", error.message);
+      console.error("Error code:", error.code);
+
+      if (error.response) {
+        console.error("HTTP status:", error.response.status);
+        console.error("Response:", error.response.data);
+      }
+
+      console.error("====================================");
+
       const statusCode = error.response?.status ?? 500;
 
       const responseBody =
@@ -83,6 +114,7 @@ const body: Record<string, any> = {
           : JSON.stringify(
               error.response?.data ?? {
                 message: error.message,
+                code: error.code,
               }
             );
 
